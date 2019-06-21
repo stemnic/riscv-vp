@@ -1,0 +1,97 @@
+# boxapp.pro
+#   (c) 2003-2018 Concept Engineering GmbH
+#
+# This is a qmake project file for generating
+# machine dependent Makefiles, considered as
+# an alternative to shipped Makefile templates.
+# Note: qmake will overwrite the existing Makefile
+# by default (use option -o to prevent this).
+#
+# It will generate a (mostly) statically linked test
+# application called boxapp:
+#
+# - if qmake can find our shared run-time library
+#   called libnlvlics it will compile with FLEXnet
+#   licensing support (-DNLVLIC).
+#
+# - if qmake can find the path to your local Verific
+#   software installation (see below) it will compile
+#   with VVDI support (-DVVDI).
+#
+# Try:
+#   qmake boxapp.pro -o Makefile-boxapp.qmake
+#   make -f Makefile-boxapp.qmake clean
+#   make -f Makefile-boxapp.qmake
+#
+TEMPLATE         = app
+CONFIG           += qt warn_off link_prl release
+TARGET           = boxapp
+VERSION          = 7.0.16
+MOC_DIR          = ./moc
+OBJECTS_DIR      = .
+QMAKE_RPATHDIR   += . ..
+CONFIG   *= x11
+LIBS     += ./nlvcore.a
+ROOTPATH = .
+exists( ./libnlvlics.so ) {
+    DEFINES += NLVLIC
+    LIBS    += -L.. -lnlvlics
+}
+
+QT       *= widgets printsupport
+static {
+    CONFIG   -= import_plugins
+    win32 {
+        QTPLUGIN *= qwindows
+    } else {
+        QTPLUGIN *= qxcb
+    }
+}
+HEADERS  += $$ROOTPATH/src/boxapp.h
+SOURCES  += $$ROOTPATH/src/boxapp.cpp
+
+HEADERS  += $$ROOTPATH/src/nlvhandler.hpp
+SOURCES  += $$ROOTPATH/src/nlvhandler.cpp
+SOURCES  += $$ROOTPATH/src/elegantEnums.cpp
+
+HEADERS += $$ROOTPATH/src/wrapper.h
+SOURCES += $$ROOTPATH/src/wrapper.cpp
+SOURCES += $$ROOTPATH/src/nlvrqt.cpp
+
+INCLUDEPATH += $$ROOTPATH/../include
+
+DEPENDPATH += $$ROOTPATH/../include
+DEPENDPATH += $$ROOTPATH/src
+
+
+# Add TDB demo code (a static/dummy DataBase)
+# to show Nlview's incremental control features.
+#
+DEFINES     += TDB CONCEPT_DEBUGGING
+SOURCES     += $$ROOTPATH/../tdb/vdiimpl.cpp
+SOURCES     += $$ROOTPATH/../tdb/data.c
+SOURCES     += $$ROOTPATH/../tdb/datatrans.c
+SOURCES     += $$ROOTPATH/../tdb/tdb.c
+HEADERS     += $$ROOTPATH/../tdb/tdb.h
+INCLUDEPATH += $$ROOTPATH/../tdb
+DEPENDPATH  += $$ROOTPATH/../tdb
+
+# Add GEX demo code that exports Nlview schematics
+# to text, SKILL files or a Qt QGraphicsScene
+# using Nlview's GEI (Graphics Export Interface).
+#
+DEFINES     += GEX
+HEADERS     += $$ROOTPATH/../include/gei.h
+HEADERS     += $$ROOTPATH/../gex/gdump.h
+HEADERS     += $$ROOTPATH/../gex/gskill.h
+HEADERS     += $$ROOTPATH/../gex/gscene.h
+HEADERS     += $$ROOTPATH/../gex/gassert.h
+HEADERS     += $$ROOTPATH/../gex/ghash.h
+SOURCES     += $$ROOTPATH/../gex/gdump.c
+SOURCES     += $$ROOTPATH/../gex/gskill.c
+SOURCES     += $$ROOTPATH/../gex/gscene.cpp
+SOURCES     += $$ROOTPATH/../gex/ghash.c
+INCLUDEPATH += $$ROOTPATH/../gex
+INCLUDEPATH *= $$ROOTPATH/../include
+DEPENDPATH  += $$ROOTPATH/../gex
+
