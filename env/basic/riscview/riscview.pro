@@ -29,7 +29,8 @@ TARGET           = riscview
 VERSION          = 7.0.16
 MOC_DIR          = ./moc
 OBJECTS_DIR      = .
-QMAKE_RPATHDIR   += . ..
+QMAKE_RPATHDIR   += . ./ext
+EXT_DIR          = ./ext
 CONFIG   *= x11
 LIBS     += ./nlvcore.a
 ROOTPATH = .
@@ -58,9 +59,9 @@ HEADERS += $$ROOTPATH/src/wrapper.h
 SOURCES += $$ROOTPATH/src/wrapper.cpp
 SOURCES += $$ROOTPATH/src/nlvrqt.cpp
 
-INCLUDEPATH += $$ROOTPATH/../include
+INCLUDEPATH += $$ROOTPATH/ext/include
 
-DEPENDPATH += $$ROOTPATH/../include
+DEPENDPATH += $$ROOTPATH/ext/include
 DEPENDPATH += $$ROOTPATH/src
 
 
@@ -68,30 +69,30 @@ DEPENDPATH += $$ROOTPATH/src
 # to show Nlview's incremental control features.
 #
 DEFINES     += TDB CONCEPT_DEBUGGING
-SOURCES     += $$ROOTPATH/../tdb/vdiimpl.cpp
-SOURCES     += $$ROOTPATH/../tdb/data.c
-SOURCES     += $$ROOTPATH/../tdb/datatrans.c
-SOURCES     += $$ROOTPATH/../tdb/tdb.c
-HEADERS     += $$ROOTPATH/../tdb/tdb.h
-INCLUDEPATH += $$ROOTPATH/../tdb
-DEPENDPATH  += $$ROOTPATH/../tdb
+SOURCES     += $$EXT_DIR/tdb/vdiimpl.cpp
+SOURCES     += $$EXT_DIR/tdb/data.c
+SOURCES     += $$EXT_DIR/tdb/datatrans.c
+SOURCES     += $$EXT_DIR/tdb/tdb.c
+HEADERS     += $$EXT_DIR/tdb/tdb.h
+INCLUDEPATH += $$EXT_DIR/tdb
+DEPENDPATH  += $$EXT_DIR/tdb
 
 # Add GEX demo code that exports Nlview schematics
 # to text, SKILL files or a Qt QGraphicsScene
 # using Nlview's GEI (Graphics Export Interface).
 #
 DEFINES     += GEX
-HEADERS     += $$ROOTPATH/../include/gei.h
-HEADERS     += $$ROOTPATH/../gex/gdump.h
-HEADERS     += $$ROOTPATH/../gex/gskill.h
-HEADERS     += $$ROOTPATH/../gex/gscene.h
-HEADERS     += $$ROOTPATH/../gex/gassert.h
-HEADERS     += $$ROOTPATH/../gex/ghash.h
-SOURCES     += $$ROOTPATH/../gex/gdump.c
-SOURCES     += $$ROOTPATH/../gex/gskill.c
-SOURCES     += $$ROOTPATH/../gex/gscene.cpp
-SOURCES     += $$ROOTPATH/../gex/ghash.c
-INCLUDEPATH += $$ROOTPATH/../gex
-INCLUDEPATH *= $$ROOTPATH/../include
-DEPENDPATH  += $$ROOTPATH/../gex
+HEADERS     += $$EXT_DIR/include/gei.h
+HEADERS     += $$EXT_DIR/gex/gdump.h
+HEADERS     += $$EXT_DIR/gex/gskill.h
+HEADERS     += $$EXT_DIR/gex/gscene.h
+HEADERS     += $$EXT_DIR/gex/gassert.h
+HEADERS     += $$EXT_DIR/gex/ghash.h
+SOURCES     += $$EXT_DIR/gex/gdump.c
+SOURCES     += $$EXT_DIR/gex/gskill.c
+SOURCES     += $$EXT_DIR/gex/gscene.cpp
+SOURCES     += $$EXT_DIR/gex/ghash.c
+INCLUDEPATH += $$EXT_DIR/gex
+INCLUDEPATH *= $$EXT_DIR/include
+DEPENDPATH  += $$EXT_DIR/gex
 
