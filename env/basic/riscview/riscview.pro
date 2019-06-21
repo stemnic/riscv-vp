@@ -36,7 +36,7 @@ LIBS     += ./nlvcore.a
 ROOTPATH = .
 exists( ./libnlvlics.so ) {
     DEFINES += NLVLIC
-    LIBS    += -L.. -lnlvlics
+    LIBS    += -L. -lnlvlics
 }
 
 QT       *= widgets printsupport
