@@ -1,4 +1,4 @@
-# boxapp.pro
+# riscview.pro
 #   (c) 2003-2018 Concept Engineering GmbH
 #
 # This is a qmake project file for generating
@@ -25,7 +25,7 @@
 #
 TEMPLATE         = app
 CONFIG           += qt warn_off link_prl release
-TARGET           = boxapp
+TARGET           = riscview
 VERSION          = 7.0.16
 MOC_DIR          = ./moc
 OBJECTS_DIR      = .
