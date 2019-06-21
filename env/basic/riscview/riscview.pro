@@ -8,7 +8,7 @@
 # by default (use option -o to prevent this).
 #
 # It will generate a (mostly) statically linked test
-# application called boxapp:
+# application called riscview:
 #
 # - if qmake can find our shared run-time library
 #   called libnlvlics it will compile with FLEXnet
@@ -19,9 +19,9 @@
 #   with VVDI support (-DVVDI).
 #
 # Try:
-#   qmake boxapp.pro -o Makefile-boxapp.qmake
-#   make -f Makefile-boxapp.qmake clean
-#   make -f Makefile-boxapp.qmake
+#   qmake riscview.pro -o Makefile-riscview.qmake
+#   make -f Makefile-riscview.qmake clean
+#   make -f Makefile-riscview.qmake
 #
 TEMPLATE         = app
 CONFIG           += qt warn_off link_prl release
@@ -48,8 +48,8 @@ static {
         QTPLUGIN *= qxcb
     }
 }
-HEADERS  += $$ROOTPATH/src/boxapp.h
-SOURCES  += $$ROOTPATH/src/boxapp.cpp
+HEADERS  += $$ROOTPATH/src/riscview.h
+SOURCES  += $$ROOTPATH/src/riscview.cpp
 
 HEADERS  += $$ROOTPATH/src/nlvhandler.hpp
 SOURCES  += $$ROOTPATH/src/nlvhandler.cpp
