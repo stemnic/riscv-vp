@@ -1,4 +1,0 @@
-*.o
-*.qmake
-*.stash
-moc/*
