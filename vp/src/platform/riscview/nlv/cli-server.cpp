@@ -9,7 +9,7 @@
 #include <csignal>
 #include <functional>
 #include <iostream>
-#include <thread>
+
 
 #include "connector-server.hpp"
 
@@ -46,12 +46,11 @@ int main(int argc, char* argv[]) {
 
 	signal(SIGINT, signalHandler);
 
-	ncs.registerInput(bind(command, placeholders::_1));
-	thread server(bind(&NLVConnectorServer::startListening, &ncs));
+	ncs.registerInput(std::bind(command, placeholders::_1));
+	ncs.startListening();
 
 	while (!stop && !ncs.isStopped()) {
 		usleep(100000);
 	}
 	ncs.quit();
-	server.join();
 }

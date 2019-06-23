@@ -13,6 +13,7 @@
 #pragma once
 
 #include "wrapper.h"
+#include "../../vp/src/platform/riscview/nlv/connector-server.hpp"
 
 #include <QtGui>
 #include <QtCore>
@@ -97,6 +98,7 @@ class Nlview : public NlvQWidget
 	QAction*	prevPageAct;
 	QAction*	nextPageAct;
 	QAction*	generateCodeAct;
+
 };
 
 
@@ -134,6 +136,7 @@ class Demo : public QMainWindow
 	bool license();			// check-out a license for Nlview
 	bool unlicense();		// check-in  a license for Nlview
 	bool doCustomAction();
+	void consumeExternCommand(const char* cmd);
 
 #if QT_VERSION >= 0x040400
 	typedef QPlainTextEdit LogWindow;
@@ -193,6 +196,7 @@ class Demo : public QMainWindow
 	QAction*	nextPageAct;
 	QProgressBar*	progressBar;
 	QLabel*		attachLabel;
+	NLVConnectorServer ncs;
 
 
     // **********************************************************

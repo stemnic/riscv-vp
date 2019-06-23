@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <thread>
+#include <functional>
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa) {
@@ -31,7 +32,7 @@ void *get_in_addr(struct sockaddr *sa) {
 	return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
 
-NLVConnectorServer::NLVConnectorServer() : fd(-1), stop(false), fun(nullptr) {};
+NLVConnectorServer::NLVConnectorServer() : listenerThread(nullptr), fd(-1), stop(false), fun(nullptr) {};
 NLVConnectorServer::~NLVConnectorServer(){
 	if (fd >= 0) {
 		std::cout << "closing nlv-connector-server socket " << fd << std::endl;
@@ -58,7 +59,7 @@ bool NLVConnectorServer::setupConnection(const char *port) {
 	// loop through all the results and bind to the first we can
 	for (p = servinfo; p != NULL; p = p->ai_next) {
 		if ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-			perror("gpio-server: socket");
+			perror("nlv-connector-server: socket");
 			continue;
 		}
 
@@ -69,7 +70,7 @@ bool NLVConnectorServer::setupConnection(const char *port) {
 
 		if (bind(fd, p->ai_addr, p->ai_addrlen) == -1) {
 			close(fd);
-			perror("gpio-server: bind");
+			perror("nlv-connector-server: bind");
 			continue;
 		}
 
@@ -79,7 +80,7 @@ bool NLVConnectorServer::setupConnection(const char *port) {
 	freeaddrinfo(servinfo);  // all done with this structure
 
 	if (p == NULL) {
-		fprintf(stderr, "gpio-server: failed to bind\n");
+		fprintf(stderr, "nlv-connector-server: failed to bind\n");
 		return false;
 	}
 
@@ -98,7 +99,12 @@ void NLVConnectorServer::registerInput(std::function<void(const char* command)> 
 	this->fun = fun;
 }
 
-void NLVConnectorServer::startListening() {
+void NLVConnectorServer::startListening()
+{
+	listenerThread = new std::thread(std::bind(&NLVConnectorServer::listener, this));
+}
+
+void NLVConnectorServer::listener() {
 	if (listen(fd, 1) == -1) {
 		std::cerr << "nlv-connector: fd " << fd << " ";
 		perror("listen");
@@ -122,7 +128,7 @@ void NLVConnectorServer::startListening() {
 		}
 
 		inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
-		printf("gpio-server: got connection from %s\n", s);
+		printf("nlv-connector-server: got connection from %s\n", s);
 		handleConnection(new_fd);
 	}
 }
@@ -135,6 +141,6 @@ void NLVConnectorServer::handleConnection(int conn) {
 	while ((bytes = read(conn, buffer, sizeof(buffer))) > 0) {
 		fun(buffer);
 	}
-	std::cout << "gpio-client disconnected. (" << bytes << ")" << std::endl;
+	std::cout << "nlv-connector disconnected. (" << bytes << ")" << std::endl;
 	close(conn);
 }

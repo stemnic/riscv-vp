@@ -31,6 +31,7 @@ MOC_DIR          = ./moc
 OBJECTS_DIR      = .
 QMAKE_RPATHDIR   += . ./ext
 EXT_DIR          = ./ext
+SERVERPATH       = ../../vp/src/platform/riscview/nlv
 CONFIG   *= x11
 LIBS     += ./nlvcore.a
 ROOTPATH = .
@@ -58,6 +59,9 @@ SOURCES  += $$ROOTPATH/src/elegantEnums.cpp
 HEADERS += $$ROOTPATH/src/wrapper.h
 SOURCES += $$ROOTPATH/src/wrapper.cpp
 SOURCES += $$ROOTPATH/src/nlvrqt.cpp
+
+HEADERS += $$SERVERPATH/connector-server.hpp
+SOURCES += $$SERVERPATH/connector-server.cpp
 
 INCLUDEPATH += $$ROOTPATH/ext/include
 

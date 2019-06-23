@@ -77,6 +77,11 @@ Nlview::Nlview(bool perfectfs_, QWidget* parent)
 	<< "-echo_type" << "instdrag"
 	<< "-autoscroll";
     command(NULL);
+
+	if (!ncs.setupConnection("1333")) {
+		std::cerr << "cant set up server" << std::endl;
+		exit(-1);
+	}
 }
 
 Nlview::~Nlview() {}
@@ -652,6 +657,8 @@ Demo::Demo(const char* argv0, bool perfectfs_)
 
 Demo::~Demo() {
     unlicense();
+	ncs.quit();
+	server.join();
 }
 
 // **********************************************************************
@@ -2287,6 +2294,7 @@ bool Demo::gscene()				// menu File/Gscene...
 
 bool Demo::doCustomAction()
 {
+	/*
 	NLVhandler nlv(nlview);
 	char* commandlist[] = {
 			"module new module",
@@ -2334,8 +2342,22 @@ bool Demo::doCustomAction()
 	}
 
 	nlv.show();
+	*/
 
+    //TODO: listening mit failhandler, dann cli-client senden lassen
+	ncs.registerInput(bind(consumeExternCommand, &Demo::consumeExternCommand, placeholders::_1));
+	thread server(bind(&NLVConnectorServer::startListening, &ncs));
 	return true;
+}
+
+void Demo::consumeExternCommand(const char* cmd)
+{
+	bool r;
+	const char* err = nlview->commandLine(&r, cmd);
+	if(!r)
+	{
+		std::cerr << err << std::endl;
+	}
 }
 
 static QPicture* createDemoQPicture()
@@ -2544,6 +2566,8 @@ int main( int argc, char* argv[] )
     }
 
     demo.doCustomAction();
+
+
     a.setQuitOnLastWindowClosed (true);
     return a.exec();
 }

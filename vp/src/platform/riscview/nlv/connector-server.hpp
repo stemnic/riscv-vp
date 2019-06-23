@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <thread>
 #include "connector-common.hpp"
 
 class NLVConnectorServer {
@@ -8,6 +9,7 @@ class NLVConnectorServer {
 	volatile bool stop;
 	std::function<void(const char* command)> fun;
 	void handleConnection(int conn);
+	std::thread* listenerThread;
 
 public:
 	NLVConnectorServer();
@@ -17,4 +19,6 @@ public:
 	bool isStopped();
 	void registerInput(std::function<void(const char* command)> fun);
 	void startListening();
+private:
+	void listener();
 };
