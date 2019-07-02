@@ -15,7 +15,6 @@ CAN::CAN()
 	state = State::init;
 	status = 0;
 	stop = false;
-	listener = std::thread(&CAN::listen, this);
 
     s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
     if(s < 0)
@@ -39,6 +38,8 @@ CAN::CAN()
     	perror("Could not bind to can family");
     	stop = true;
     }
+
+    listener = std::thread(&CAN::listen, this);
 }
 
 CAN::~CAN()

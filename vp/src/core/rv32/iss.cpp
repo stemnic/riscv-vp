@@ -84,6 +84,8 @@ ISS::ISS(uint32_t hart_id, bool use_E_base_isa)
     if (use_E_base_isa)
     	csrs.misa.select_E_base_isa();
 
+    branch_predictor.pipeline = &pipeline;
+
 	sc_core::sc_time qt = tlm::tlm_global_quantum::instance().get();
 	cycle_time = sc_core::sc_time(10, sc_core::SC_NS);
 
@@ -172,187 +174,239 @@ void ISS::exec_step() {
 			break;
 
 		case Opcode::ADDI:
-			regs[instr.rd()] = regs[instr.rs1()] + instr.I_imm();
+		    write(instr.rd(), read(instr.rs1()) + instr.I_imm());
 			break;
 
 		case Opcode::SLTI:
-			regs[instr.rd()] = regs[instr.rs1()] < instr.I_imm();
+            write(instr.rd(), read(instr.rs1()) < instr.I_imm());
 			break;
 
 		case Opcode::SLTIU:
-			regs[instr.rd()] = ((uint32_t)regs[instr.rs1()]) < ((uint32_t)instr.I_imm());
+            write(instr.rd(), u_read(instr.rs1()) < ((uint32_t)instr.I_imm()));
 			break;
 
 		case Opcode::XORI:
-			regs[instr.rd()] = regs[instr.rs1()] ^ instr.I_imm();
+            write(instr.rd(), read(instr.rs1()) ^ instr.I_imm());
 			break;
 
 		case Opcode::ORI:
-			regs[instr.rd()] = regs[instr.rs1()] | instr.I_imm();
+            write(instr.rd(), read(instr.rs1()) | instr.I_imm());
 			break;
 
 		case Opcode::ANDI:
-			regs[instr.rd()] = regs[instr.rs1()] & instr.I_imm();
+            write(instr.rd(), read(instr.rs1()) & instr.I_imm());
 			break;
 
 		case Opcode::ADD:
-			regs[instr.rd()] = regs[instr.rs1()] + regs[instr.rs2()];
+            write(instr.rd(), read(instr.rs1()) + read(instr.rs2()));
 			break;
 
 		case Opcode::SUB:
-			regs[instr.rd()] = regs[instr.rs1()] - regs[instr.rs2()];
+            write(instr.rd(), read(instr.rs1()) - read(instr.rs2()));
 			break;
 
 		case Opcode::SLL:
-			regs[instr.rd()] = regs[instr.rs1()] << regs.shamt(instr.rs2());
+            write(instr.rd(), read(instr.rs1()) << shamt(instr.rs2()));
 			break;
 
 		case Opcode::SLT:
-			regs[instr.rd()] = regs[instr.rs1()] < regs[instr.rs2()];
+            write(instr.rd(), read(instr.rs1()) < read(instr.rs2()));
 			break;
 
 		case Opcode::SLTU:
-			regs[instr.rd()] = ((uint32_t)regs[instr.rs1()]) < ((uint32_t)regs[instr.rs2()]);
+            write(instr.rd(), u_read(instr.rs1()) < u_read(instr.rs2()));
 			break;
 
 		case Opcode::SRL:
-			regs[instr.rd()] = ((uint32_t)regs[instr.rs1()]) >> regs.shamt(instr.rs2());
+            write(instr.rd(), u_read(instr.rs1()) >> shamt(instr.rs2()));
 			break;
 
 		case Opcode::SRA:
-			regs[instr.rd()] = regs[instr.rs1()] >> regs.shamt(instr.rs2());
+            write(instr.rd(), read(instr.rs1()) >> shamt(instr.rs2()));
 			break;
 
 		case Opcode::XOR:
-			regs[instr.rd()] = regs[instr.rs1()] ^ regs[instr.rs2()];
+            write(instr.rd(), read(instr.rs1()) ^ read(instr.rs2()));
 			break;
 
 		case Opcode::OR:
-			regs[instr.rd()] = regs[instr.rs1()] | regs[instr.rs2()];
+            write(instr.rd(), read(instr.rs1()) | read(instr.rs2()));
 			break;
 
 		case Opcode::AND:
-			regs[instr.rd()] = regs[instr.rs1()] & regs[instr.rs2()];
+            write(instr.rd(), read(instr.rs1()) & read(instr.rs2()));
 			break;
 
 		case Opcode::SLLI:
-			regs[instr.rd()] = regs[instr.rs1()] << instr.shamt();
+            write(instr.rd(), read(instr.rs1()) << instr.shamt());
 			break;
 
 		case Opcode::SRLI:
-			regs[instr.rd()] = ((uint32_t)regs[instr.rs1()]) >> instr.shamt();
+            write(instr.rd(), u_read(instr.rs1()) >> instr.shamt());
 			break;
 
 		case Opcode::SRAI:
-			regs[instr.rd()] = regs[instr.rs1()] >> instr.shamt();
+            write(instr.rd(), read(instr.rs1()) >> instr.shamt());
 			break;
 
 		case Opcode::LUI:
-			regs[instr.rd()] = instr.U_imm();
+            write(instr.rd(), instr.U_imm());
 			break;
 
 		case Opcode::AUIPC:
-			regs[instr.rd()] = last_pc + instr.U_imm();
+            write(instr.rd(), last_pc + instr.U_imm());
 			break;
 
 		case Opcode::JAL: {
             auto link = pc;
             pc = last_pc + instr.J_imm();
 			trap_check_pc_alignment();
-            regs[instr.rd()] = link;
+            write(instr.rd(), link);
+
+            if (instr.rd() == RegFile::ra)
+                branch_predictor.do_call(last_pc, pc, link);
+            else
+                branch_predictor.do_jump(last_pc, pc, link);
         } break;
 
 		case Opcode::JALR: {
             auto link = pc;
             pc = (regs[instr.rs1()] + instr.I_imm()) & ~1;
 			trap_check_pc_alignment();
-            regs[instr.rd()] = link;
+            write(instr.rd(), link);
+
+            if (instr.rd() == RegFile::ra)
+                branch_predictor.do_call(last_pc, pc, link);
+            else if (instr.rs1() == RegFile::ra)
+                branch_predictor.do_ret(last_pc, pc, link);
+            else
+                branch_predictor.do_jump(last_pc, pc, link);
 		} break;
 
 		case Opcode::SB: {
-			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
-			mem->store_byte(addr, regs[instr.rs2()]);
+			uint32_t addr = read(instr.rs1()) + instr.S_imm();
+			mem->store_byte(addr, read(instr.rs2()));
+
+			pipeline.reserve_store({addr, addr+1}, 2);
 		} break;
 
 		case Opcode::SH: {
-			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
+			uint32_t addr = read(instr.rs1()) + instr.S_imm();
 			trap_check_addr_alignment<2, false>(addr);
-			mem->store_half(addr, regs[instr.rs2()]);
+			mem->store_half(addr, read(instr.rs2()));
+
+            pipeline.reserve_store({addr, addr+2}, 2);
 		} break;
 
 		case Opcode::SW: {
-			uint32_t addr = regs[instr.rs1()] + instr.S_imm();
+			uint32_t addr = read(instr.rs1()) + instr.S_imm();
 			trap_check_addr_alignment<4, false>(addr);
-			mem->store_word(addr, regs[instr.rs2()]);
+			mem->store_word(addr, read(instr.rs2()));
+
+            pipeline.reserve_store({addr, addr+4}, 2);
 		} break;
 
 		case Opcode::LB: {
-			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
-			regs[instr.rd()] = mem->load_byte(addr);
+			uint32_t addr = read(instr.rs1()) + instr.I_imm();
+			write(instr.rd(), mem->load_byte(addr));
+
+			pipeline.do_load({addr, addr+1}, instr.rd(), 3);
 		} break;
 
 		case Opcode::LH: {
-			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+			uint32_t addr = read(instr.rs1()) + instr.I_imm();
 			trap_check_addr_alignment<2, true>(addr);
-			regs[instr.rd()] = mem->load_half(addr);
+            write(instr.rd(), mem->load_half(addr));
+
+            pipeline.do_load({addr, addr+2}, instr.rd(), 3);
 		} break;
 
 		case Opcode::LW: {
-			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+			uint32_t addr = read(instr.rs1()) + instr.I_imm();
 			trap_check_addr_alignment<4, true>(addr);
-			regs[instr.rd()] = mem->load_word(addr);
+            write(instr.rd(), mem->load_word(addr));
+
+            pipeline.do_load({addr, addr+4}, instr.rd(), 2);
 		} break;
 
 		case Opcode::LBU: {
-			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
-			regs[instr.rd()] = mem->load_ubyte(addr);
+			uint32_t addr = read(instr.rs1()) + instr.I_imm();
+            write(instr.rd(), mem->load_ubyte(addr));
+
+            pipeline.do_load({addr, addr+1}, instr.rd(), 3);
 		} break;
 
 		case Opcode::LHU: {
-			uint32_t addr = regs[instr.rs1()] + instr.I_imm();
+			uint32_t addr = read(instr.rs1()) + instr.I_imm();
 			trap_check_addr_alignment<2, true>(addr);
-			regs[instr.rd()] = mem->load_uhalf(addr);
+            write(instr.rd(), mem->load_uhalf(addr));
+
+            pipeline.do_load({addr, addr+2}, instr.rd(), 3);
 		} break;
 
 		case Opcode::BEQ:
-			if (regs[instr.rs1()] == regs[instr.rs2()]) {
+			if (read(instr.rs1()) == read(instr.rs2())) {
                 pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
-            }
+
+                branch_predictor.update_branch_prediction(last_pc, pc, true);
+            } else {
+                branch_predictor.update_branch_prediction(last_pc, pc, false);
+			}
 			break;
 
 		case Opcode::BNE:
-			if (regs[instr.rs1()] != regs[instr.rs2()]) {
+			if (read(instr.rs1()) != read(instr.rs2())) {
                 pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
+
+                branch_predictor.update_branch_prediction(last_pc, pc, true);
+            } else {
+                branch_predictor.update_branch_prediction(last_pc, pc, false);
             }
 			break;
 
 		case Opcode::BLT:
-			if (regs[instr.rs1()] < regs[instr.rs2()]) {
+			if (read(instr.rs1()) < read(instr.rs2())) {
                 pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
+
+                branch_predictor.update_branch_prediction(last_pc, pc, true);
+            } else {
+                branch_predictor.update_branch_prediction(last_pc, pc, false);
             }
 			break;
 
 		case Opcode::BGE:
-			if (regs[instr.rs1()] >= regs[instr.rs2()]) {
+			if (read(instr.rs1()) >= read(instr.rs2())) {
                 pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
+
+                branch_predictor.update_branch_prediction(last_pc, pc, true);
+            } else {
+                branch_predictor.update_branch_prediction(last_pc, pc, false);
             }
 			break;
 
 		case Opcode::BLTU:
-			if ((uint32_t)regs[instr.rs1()] < (uint32_t)regs[instr.rs2()]) {
+			if (u_read(instr.rs1()) < u_read(instr.rs2())) {
                 pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
+
+                branch_predictor.update_branch_prediction(last_pc, pc, true);
+            } else {
+                branch_predictor.update_branch_prediction(last_pc, pc, false);
             }
 			break;
 
 		case Opcode::BGEU:
-			if ((uint32_t)regs[instr.rs1()] >= (uint32_t)regs[instr.rs2()]) {
+			if (u_read(instr.rs1()) >= u_read(instr.rs2())) {
                 pc = last_pc + instr.B_imm();
 				trap_check_pc_alignment();
+
+                branch_predictor.update_branch_prediction(last_pc, pc, true);
+            } else {
+                branch_predictor.update_branch_prediction(last_pc, pc, false);
             }
 			break;
 
@@ -392,9 +446,10 @@ void ISS::exec_step() {
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			} else {
 				auto rd = instr.rd();
-				auto rs1_val = regs[instr.rs1()];
+				auto rs1_val = read(instr.rs1());
 				if (rd != RegFile::zero) {
-					regs[instr.rd()] = get_csr_value(addr);
+				    write(rd, get_csr_value(addr));
+				    pipeline.do_csr(rd);
 				}
 				set_csr_value(addr, rs1_val);
 			}
@@ -408,10 +463,12 @@ void ISS::exec_step() {
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			} else {
 				auto rd = instr.rd();
-				auto rs1_val = regs[rs1];
+				auto rs1_val = read(rs1);
 				auto csr_val = get_csr_value(addr);
-				if (rd != RegFile::zero)
-					regs[rd] = csr_val;
+				if (rd != RegFile::zero) {
+                    this->write(rd, csr_val);
+                    pipeline.do_csr(rd);
+                }
 				if (write)
 					set_csr_value(addr, csr_val | rs1_val);
 			}
@@ -425,10 +482,12 @@ void ISS::exec_step() {
 				raise_trap(EXC_ILLEGAL_INSTR, instr.data());
 			} else {
 				auto rd = instr.rd();
-				auto rs1_val = regs[rs1];
+				auto rs1_val = read(rs1);
 				auto csr_val = get_csr_value(addr);
-				if (rd != RegFile::zero)
-					regs[rd] = csr_val;
+				if (rd != RegFile::zero) {
+                    this->write(rd, csr_val);
+                    pipeline.do_csr(rd);
+                }
 				if (write)
 					set_csr_value(addr, csr_val & ~rs1_val);
 			}
@@ -441,7 +500,8 @@ void ISS::exec_step() {
 			} else {
 				auto rd = instr.rd();
 				if (rd != RegFile::zero) {
-					regs[rd] = get_csr_value(addr);
+                    write(rd, get_csr_value(addr));
+                    pipeline.do_csr(rd);
 				}
 				set_csr_value(addr, instr.zimm());
 			}
@@ -456,8 +516,10 @@ void ISS::exec_step() {
 			} else {
 				auto csr_val = get_csr_value(addr);
 				auto rd = instr.rd();
-				if (rd != RegFile::zero)
-					regs[rd] = csr_val;
+				if (rd != RegFile::zero) {
+                    this->write(rd, csr_val);
+                    pipeline.do_csr(rd);
+                }
 				if (write)
 					set_csr_value(addr, csr_val | zimm);
 			}
@@ -472,90 +534,122 @@ void ISS::exec_step() {
 			} else {
 				auto csr_val = get_csr_value(addr);
 				auto rd = instr.rd();
-				if (rd != RegFile::zero)
-					regs[rd] = csr_val;
+				if (rd != RegFile::zero) {
+                    this->write(rd, csr_val);
+                    pipeline.do_csr(rd);
+                }
 				if (write)
 					set_csr_value(addr, csr_val & ~zimm);
 			}
 		} break;
 
 		case Opcode::MUL: {
-			int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
-			regs[instr.rd()] = ans & 0xFFFFFFFF;
+		    auto a = read(instr.rs1());
+		    auto b = read(instr.rs2());
+
+			int64_t ans = (int64_t)a * (int64_t)b;
+			write(instr.rd(), ans & 0xFFFFFFFF);
+
+			pipeline.do_mult(instr.rd(), a, b);
 		} break;
 
 		case Opcode::MULH: {
-			int64_t ans = (int64_t)regs[instr.rs1()] * (int64_t)regs[instr.rs2()];
-			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
+            auto a = read(instr.rs1());
+            auto b = read(instr.rs2());
+
+			int64_t ans = (int64_t)a * (int64_t)b;
+			write(instr.rd(), (ans & 0xFFFFFFFF00000000) >> 32);
+
+            pipeline.do_mult(instr.rd(), a, b);
 		} break;
 
 		case Opcode::MULHU: {
-			int64_t ans = ((uint64_t)(uint32_t)regs[instr.rs1()]) * (uint64_t)((uint32_t)regs[instr.rs2()]);
-			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
+            auto a = read(instr.rs1());
+            auto b = read(instr.rs2());
+
+			int64_t ans = ((uint64_t)(uint32_t)a) * (uint64_t)((uint32_t)b);
+			write(instr.rd(), (ans & 0xFFFFFFFF00000000) >> 32);
+
+            pipeline.do_mult(instr.rd(), a, b);
 		} break;
 
 		case Opcode::MULHSU: {
+            auto a = read(instr.rs1());
+            auto b = read(instr.rs2());
+
 			int64_t ans = (int64_t)regs[instr.rs1()] * (uint64_t)((uint32_t)regs[instr.rs2()]);
-			regs[instr.rd()] = (ans & 0xFFFFFFFF00000000) >> 32;
+            write(instr.rd(), (ans & 0xFFFFFFFF00000000) >> 32);
+
+            pipeline.do_mult(instr.rd(), a, b);
 		} break;
 
 		case Opcode::DIV: {
-			auto a = regs[instr.rs1()];
-			auto b = regs[instr.rs2()];
+			auto a = read(instr.rs1());
+			auto b = read(instr.rs2());
 			if (b == 0) {
-				regs[instr.rd()] = -1;
+			    write(instr.rd(), -1);
 			} else if (a == REG_MIN && b == -1) {
-				regs[instr.rd()] = a;
+                write(instr.rd(), a);
 			} else {
-				regs[instr.rd()] = a / b;
+                write(instr.rd(), a / b);
 			}
+
+            pipeline.do_div(instr.rd(), a, b);
 		} break;
 
 		case Opcode::DIVU: {
-			auto a = regs[instr.rs1()];
-			auto b = regs[instr.rs2()];
+			auto a = read(instr.rs1());
+			auto b = read(instr.rs2());
 			if (b == 0) {
-				regs[instr.rd()] = -1;
+                write(instr.rd(), -1);
 			} else {
-				regs[instr.rd()] = (uint32_t)a / (uint32_t)b;
+                write(instr.rd(), (uint32_t)a / (uint32_t)b);
 			}
+
+            pipeline.do_div(instr.rd(), a, b);
 		} break;
 
 		case Opcode::REM: {
-			auto a = regs[instr.rs1()];
-			auto b = regs[instr.rs2()];
+			auto a = read(instr.rs1());
+			auto b = read(instr.rs2());
 			if (b == 0) {
-				regs[instr.rd()] = a;
+                write(instr.rd(), a);
 			} else if (a == REG_MIN && b == -1) {
-				regs[instr.rd()] = 0;
+                write(instr.rd(), 0);
 			} else {
-				regs[instr.rd()] = a % b;
+                write(instr.rd(), a % b);
 			}
+
+            pipeline.do_div(instr.rd(), a, b);
 		} break;
 
 		case Opcode::REMU: {
-			auto a = regs[instr.rs1()];
-			auto b = regs[instr.rs2()];
+			auto a = read(instr.rs1());
+			auto b = read(instr.rs2());
 			if (b == 0) {
-				regs[instr.rd()] = a;
+                write(instr.rd(), a);
 			} else {
-				regs[instr.rd()] = (uint32_t)a % (uint32_t)b;
+                write(instr.rd(), (uint32_t)a % (uint32_t)b);
 			}
+
+            pipeline.do_div(instr.rd(), a, b);
 		} break;
 
 		case Opcode::LR_W: {
-			uint32_t addr = regs[instr.rs1()];
+			uint32_t addr = read(instr.rs1());
 			trap_check_addr_alignment<4, true>(addr);
-            regs[instr.rd()] = mem->atomic_load_reserved_word(addr);
+			write(instr.rd(), mem->atomic_load_reserved_word(addr));
             lr_sc_counter = 17;  // this instruction + 16 additional ones, (an over-approximation) to cover the RISC-V forward progress property
+
+            pipeline.do_load({addr, addr+4}, instr.rd(), 2);
 		} break;
 
 		case Opcode::SC_W: {
-            uint32_t addr = regs[instr.rs1()];
+            uint32_t addr = read(instr.rs1());
 			trap_check_addr_alignment<4, false>(addr);
-            uint32_t val  = regs[instr.rs2()];
-            regs[instr.rd()] = 1;												        // failure by default (in case a trap is thrown)
-            regs[instr.rd()] = mem->atomic_store_conditional_word(addr, val) ? 0 : 1;	// overwrite result (in case no trap is thrown)
+            uint32_t val  = read(instr.rs2());
+            write(instr.rd(), 1);                                                       // failure by default (in case a trap is thrown)
+            write(instr.rd(), mem->atomic_store_conditional_word(addr, val) ? 0 : 1);	// overwrite result (in case no trap is thrown)
 			lr_sc_counter = 0;
 		} break;
 
@@ -906,11 +1000,13 @@ uint32_t ISS::get_csr_value(uint32_t addr) {
 		}
 
 		case MCYCLE_ADDR:
-			csrs.cycle.reg = _compute_and_get_current_cycles();
+			//csrs.cycle.reg = _compute_and_get_current_cycles();
+			csrs.cycle.reg = pipeline.num_total_cycles;
 			return csrs.cycle.low;
 
 		case MCYCLEH_ADDR:
-			csrs.cycle.reg = _compute_and_get_current_cycles();
+			//csrs.cycle.reg = _compute_and_get_current_cycles();
+            csrs.cycle.reg = pipeline.num_total_cycles;
 			return csrs.cycle.high;
 
 		case MINSTRET_ADDR:
@@ -1362,10 +1458,17 @@ void ISS::performance_and_sync_update(Opcode::Mapping executed_op) {
 			release_lr_sc_reservation();
 	}
 
+	/* simple generic instruction accurate timing model */
 	auto new_cycles = instr_cycles[executed_op];
 
 	if (!csrs.mcountinhibit.CY)
-		cycle_counter += new_cycles;
+        cycle_counter += new_cycles;
+	/****************************************************/
+
+	/* HiFive1 specific timing model */
+	pipeline.advance(1);
+	//NOTE: can set *new_cycles* here accordingly (1 cycle plus any pipeline stall since the last instruction) to also update the SystemC time.
+	/*********************************/
 
 	quantum_keeper.inc(new_cycles);
 	if (quantum_keeper.need_sync()) {
@@ -1430,4 +1533,5 @@ void ISS::show() {
 	regs.show();
 	std::cout << "pc = " << std::hex << pc << std::endl;
 	std::cout << "num-instr = " << std::dec << csrs.instret.reg << std::endl;
+	std::cout << "num-cycles = " << std::dec << pipeline.num_total_cycles << std::endl;
 }

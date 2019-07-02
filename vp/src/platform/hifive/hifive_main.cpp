@@ -84,6 +84,7 @@ struct Options {
 	unsigned int debug_port = 5005;
 
 	unsigned int tlm_global_quantum = 10;
+	unsigned int seed = 0;
 
 	void show() {
 		std::cout << "options {" << std::endl;
@@ -114,7 +115,9 @@ Options parse_command_line_arguments(int argc, char **argv) {
 		("use-instr-dmi", po::bool_switch(&opt.use_instr_dmi), "use dmi to fetch instructions")
 		("use-data-dmi", po::bool_switch(&opt.use_data_dmi), "use dmi to execute load/store operations")
 		("use-dmi", po::bool_switch(), "use instr and data dmi")
-		("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution");
+		("input-file", po::value<std::string>(&opt.input_program)->required(), "input file to use for execution")
+        ("seed", po::value<unsigned int>(&opt.seed), "seed for random generator")
+        ;
 
 		po::positional_options_description pos;
 		pos.add("input-file", 1);
@@ -144,7 +147,10 @@ Options parse_command_line_arguments(int argc, char **argv) {
 int sc_main(int argc, char **argv) {
 	Options opt = parse_command_line_arguments(argc, argv);
 
-	std::srand(std::time(nullptr));  // use current time as seed for random generator
+	if (opt.seed == 0)
+	    std::srand(std::time(nullptr));  // use current time as seed for random generator
+	else
+	    std::srand(opt.seed);
 
 	tlm::tlm_global_quantum::instance().set(sc_core::sc_time(opt.tlm_global_quantum, sc_core::SC_NS));
 
@@ -173,7 +179,9 @@ int sc_main(int argc, char **argv) {
 
 	MemoryDMI dram_dmi = MemoryDMI::create_start_size_mapping(dram.data, opt.dram_start_addr, dram.size);
 	MemoryDMI flash_dmi = MemoryDMI::create_start_size_mapping(flash.data, opt.flash_start_addr, flash.size);
-	InstrMemoryProxy instr_mem(flash_dmi, core);
+	//InstrMemoryProxy instr_mem(flash_dmi, core);
+	InstrMemoryProxyWithHiFive1CacheTiming instr_mem(flash_dmi);
+	instr_mem.pipeline = &core.pipeline;
 
 	std::shared_ptr<BusLock> bus_lock = std::make_shared<BusLock>();
 	iss_mem_if.bus_lock = bus_lock;

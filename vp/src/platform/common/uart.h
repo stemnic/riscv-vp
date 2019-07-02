@@ -58,6 +58,7 @@ struct UART : public sc_core::sc_module {
 
 		int flags = fcntl(0, F_GETFL, 0);
 		fcntl(0, F_SETFL, flags | O_NONBLOCK);
+
 		tcgetattr(STDIN_FILENO, &orig_termios);
 		struct termios raw = orig_termios;
 		raw.c_lflag &= ~(ICANON);  // Bytewise read
