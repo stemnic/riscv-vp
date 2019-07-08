@@ -25,16 +25,16 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
+	ncc.command("module new module");
+	ncc.command("load symbol ABOX v BOX pin input1 IN pin input2 IN pin output1 OUT");
+			//load symbol ABOX vn BOX pin A IN pin B IN pin C OUT);
+	ncc.command("load inst ABOX1 ABOX v");
+	ncc.command("show");
+	ncc.command("load cgraphic sparta1 linkto {inst BOX2} text \"TX\n0xFF 0xAB\nRX\n0x00 0x00\" -ll 0 0 5 place left 20 20");
+
 	/*
 	NLVhandler nlv(nlview);
-	char* commandlist[] = {
-			"module new module",
-			"load symbol ABOX v BOX pin input1 IN pin input2 IN pin output1 OUT",
-			//load symbol ABOX vn BOX pin A IN pin B IN pin C OUT
-			"load inst ABOX1 ABOX v",
-			"show",
-			"load cgraphic sparta1 linkto {inst BOX2} text \"TX\n0xFF 0xAB\nRX\n0x00 0x00\" -ll 0 0 5 place left 20 20"
-	};
+
 
 	std::list<nlv::NLElement*> elements;
 

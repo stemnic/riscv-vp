@@ -78,10 +78,6 @@ Nlview::Nlview(bool perfectfs_, QWidget* parent)
 	<< "-autoscroll";
     command(NULL);
 
-	if (!ncs.setupConnection("1333")) {
-		std::cerr << "cant set up server" << std::endl;
-		exit(-1);
-	}
 }
 
 Nlview::~Nlview() {}
@@ -653,12 +649,12 @@ Demo::Demo(const char* argv0, bool perfectfs_)
 
     logthis('i', "This is a C++/Qt test application for NlviewQT"
 		 " - find mouse bindings in the Help menu");
+
 }
 
 Demo::~Demo() {
     unlicense();
 	ncs.quit();
-	server.join();
 }
 
 // **********************************************************************
@@ -2343,15 +2339,20 @@ bool Demo::doCustomAction()
 
 	nlv.show();
 	*/
-
+	if (!ncs.setupConnection("1333")) {
+		std::cerr << "cant set up server" << std::endl;
+		exit(-1);
+	}
     //TODO: listening mit failhandler, dann cli-client senden lassen
-	ncs.registerInput(bind(consumeExternCommand, &Demo::consumeExternCommand, placeholders::_1));
-	thread server(bind(&NLVConnectorServer::startListening, &ncs));
+	ncs.registerInput(std::bind(&Demo::consumeExternCommand, this, std::placeholders::_1));
+	ncs.startListening();
 	return true;
 }
 
 void Demo::consumeExternCommand(const char* cmd)
 {
+	//Debug
+	std::cout << "received Command " << cmd << std::endl;
 	bool r;
 	const char* err = nlview->commandLine(&r, cmd);
 	if(!r)
