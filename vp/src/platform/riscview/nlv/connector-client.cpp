@@ -84,9 +84,14 @@ bool NLVConnectorClient::command(const char* command){
 	if(fd < 0)
 		return false;
 
-	//TODO: Perhaps prepend two bytes for "size"
-	if (write(fd, command, strlen(command)) != strlen(command)) {
-		std::cerr << "Error in write" << std::endl;
+	uint16_t cmdLen = strlen(command);
+
+	if (write(fd, &cmdLen, sizeof(uint16_t)) != sizeof(uint16_t)) {
+		std::cerr << "nlv-connector: Error in write (header)" << std::endl;
+		return false;
+	}
+	if (write(fd, command, cmdLen) != cmdLen) {
+		std::cerr << "nlv-connector: Error in write (body)" << std::endl;
 		return false;
 	}
 	return true;

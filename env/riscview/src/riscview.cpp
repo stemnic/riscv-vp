@@ -702,14 +702,14 @@ void Demo::createMenus()
 
 
 
-    // File menu entries...
+    /*
     QMenu* custMenu = menuBar()->addMenu(tr("&Custom"));
 
     a = custMenu->addAction(tr("&Do a specific custom action"), this, SLOT(doCustomAction()));
     a->setStatusTip(tr("This is a status tip for cust action"));
 
     custMenu->addSeparator();
-
+	*/
 
     // Option menu entries...
     optionsMenu = menuBar()->addMenu(tr("&Options"));
@@ -2352,7 +2352,7 @@ bool Demo::doCustomAction()
 void Demo::consumeExternCommand(const char* cmd)
 {
 	//Debug
-	std::cout << "received Command " << cmd << std::endl;
+	std::cout << cmd << std::endl;
 	bool r;
 	const char* err = nlview->commandLine(&r, cmd);
 	if(!r)

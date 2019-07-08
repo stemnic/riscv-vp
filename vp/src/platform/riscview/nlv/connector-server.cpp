@@ -137,8 +137,18 @@ void NLVConnectorServer::listener() {
 void NLVConnectorServer::handleConnection(int conn) {
 	static char buffer[10000]; //This should not overflow, probably.
 	int bytes;
-	//TODO: Perhaps prepend two bytes for "size"
-	while ((bytes = read(conn, buffer, sizeof(buffer))) > 0) {
+	uint16_t bytesToBeReceived = 0;
+
+	while (true) {
+		if(read(conn, &bytesToBeReceived, sizeof(uint16_t)) != sizeof(uint16_t)){
+			std::cerr << "nlv-connector: Client misaligned (header)" << std::endl;
+			break;
+		}
+		if(read(conn, buffer, bytesToBeReceived) != bytesToBeReceived){
+			std::cerr << "nlv-connector: Client misaligned (body)" << std::endl;
+			break;
+		}
+		buffer[bytesToBeReceived] = 0;	//Wow. This beautiful magic.
 		fun(buffer);
 	}
 	std::cout << "nlv-connector disconnected. (" << bytes << ")" << std::endl;

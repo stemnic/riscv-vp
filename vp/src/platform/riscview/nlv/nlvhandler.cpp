@@ -6,36 +6,6 @@ namespace nlv
 IMPL_ENUM(SType);
 IMPL_ENUM(Direction);
 
-void print(NlviewArgs& cmd)
-{
-	for(unsigned i = 0; i < cmd.length(); i++)
-	{
-		std::cout << ">" << cmd[i] << "< ";
-	}
-	std::cout << std::endl;
-}
-
-void extend(NlviewArgs& to, const NlviewArgs&& cmd)
-{
-	for(unsigned i = 0; i < cmd.length(); i++)
-	{
-		to << cmd[i];
-	}
-}
-
-void prefixAdd(NlviewArgs& to, const std::string p, const NlviewArgs cmd)
-{
-	to << (p + cmd[0]);
-	for(unsigned i = 1; i < cmd.length(); i++)
-	{
-		to << cmd[i];
-	}
-}
-
-} //namespace nlv
-
-using namespace nlv;
-
 NLElement::~NLElement(){};
 
 Connectable::Connectable(Connectable::Type type) : type(type){};
@@ -45,20 +15,20 @@ Connectable::Type Connectable::getType(){ return type; };
 Port::Port(std::string name, Direction direction) : Connectable(Connectable::Type::port), name(name), direction(direction){};
 std::string Port::getName() { return name; };
 Direction& Port::getDirection() { return direction; };
-NlviewArgs Port::toCommand()
+std::string Port::toCommand()
 {
-	NlviewArgs cmd;
-	cmd << "port" << name << ~direction;
+	std::string cmd;
+	cmd += "port " +  name + " " + ~direction;
 	return cmd;
 }
 
 Pin::Pin(std::string name, Direction direction) : name(name), direction(direction){};
 std::string Pin::getName() { return name; };
 Direction& Pin::getDirection() { return direction; };
-NlviewArgs Pin::toCommand()
+std::string Pin::toCommand()
 {
-	NlviewArgs cmd;
-	cmd << "pin" << name << ~direction;
+	std::string cmd;
+	cmd += "pin " + name + " " + ~direction;
 	return cmd;
 };
 
@@ -68,14 +38,13 @@ std::string Symbol::getName() { return name; };
 std::string Symbol::getViewname() { return viewname; };
 SType Symbol::getStype() { return stype; };
 std::vector<Pin>& Symbol::getPins() { return pins; };
-NlviewArgs Symbol::toCommand()
+std::string Symbol::toCommand()
 {
-	NlviewArgs cmd;
-	cmd << "symbol" << name << viewname << ~stype;
+	std::string cmd;
+	cmd += "symbol " + name + " " + viewname + " " + ~stype;
 	for (std::vector<Pin>::iterator it = pins.begin() ; it != pins.end(); ++it)
-		extend(cmd, it->toCommand());
-	std::cout << "Symbol: ";
-	print(cmd);
+		cmd += " " + it->toCommand();
+	std::cout << "Symbol: " << cmd << std::endl;
 	return cmd;
 };
 Instance Symbol::instantiate(std::string name)
@@ -100,12 +69,11 @@ PinInstance* Instance::getPin(Pin& pin)
 {
 	return pins[pin.getName()];
 }
-NlviewArgs Instance::toCommand()
+std::string Instance::toCommand()
 {
-	NlviewArgs cmd;
-	cmd << "inst" << name << symbol.getName() << viewname;
-	std::cout << "Instance: ";
-	print(cmd);
+	std::string cmd;
+	cmd += "inst " + name + " " + symbol.getName() + " " + viewname;
+	std::cout << "Instance: " << cmd << std::endl;
 	return cmd;
 };
 
@@ -116,19 +84,19 @@ void Connection::add(Connectable* element)
 	connectables.push_back(element);
 }
 
-NlviewArgs Connection::toCommand()
+std::string Connection::toCommand()
 {
-	NlviewArgs cmd;
-	cmd << "net" << name;
+	std::string cmd;
+	cmd += "net " + name;
 	for (std::vector<Connectable*>::iterator it = connectables.begin() ; it != connectables.end(); ++it)
 	{
 		switch((*it)->getType())
 		{
 		case Connectable::Type::pin:
-			cmd << "-pin" << static_cast<PinInstance*>(*it)->getInstance().getName() << (*it)->getName();
+			cmd += " -pin " + static_cast<PinInstance*>(*it)->getInstance().getName() + " " + (*it)->getName();
 			break;
 		case Connectable::Type::port:
-			cmd << "-port" << (*it)->getName();
+			cmd += " -port " + (*it)->getName();
 			break;
 		case Connectable::Type::hierPin:
 			//not handled
@@ -138,39 +106,31 @@ NlviewArgs Connection::toCommand()
 	return cmd;
 }
 
+}; //end namespace nlv
 
-NLVhandler::NLVhandler(NlvQWidget* nlview) : nlview(nlview){};
 
-bool NLVhandler::command(const char* command)
-{
-	std::cout << command << std::endl;
-	bool r;
-	const char* err = nlview->commandLine(&r, command);
-	if(!r)
-	{
-		std::cerr << err << std::endl;
-	}
-	return r;
-}
+NLVhandler::NLVhandler(std::function<bool(const char*)> command) : command(command){};
+
 
 void NLVhandler::init()
 {
+	command("clear");
 	command("module new module");
 }
 
-bool NLVhandler::add(NLElement& elem)
+bool NLVhandler::add(nlv::NLElement& elem)
 {
-	bool r;
-	NlviewArgs arg;
-	arg << "load";
-	extend(arg, elem.toCommand());
-	print(arg);
-	const char* err = nlview->command(&r, arg);
-	if(!r)
+	std::string arg;
+	arg = "load ";
+	arg += elem.toCommand();
+	std::cout << arg << std::endl;
+
+	if(!command(arg.c_str()))
 	{
-		std::cerr << err << std::endl;
+		std::cerr << "NLVHandler: Connection lost" << std::endl;
+		return false;
 	}
-	return r;
+	return true;
 }
 
 void NLVhandler::show()

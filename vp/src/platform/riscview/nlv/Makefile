@@ -10,8 +10,8 @@ all: cli-server cli-client
 %.o : %.cpp
 	$(CC) $(CFLAGS) -c $^ -o $@
 
-cli-client: connector-client.o cli-client.cpp
-	$(CC) $(CFLAGS) -o cli-client cli-client.cpp connector-client.o
+cli-client: connector-client.o nlvhandler.o elegantEnums.o cli-client.cpp
+	$(CC) $(CFLAGS) -o cli-client cli-client.cpp connector-client.o nlvhandler.o elegantEnums.o 
 
 cli-server: connector-server.o cli-server.cpp
 	$(CC) $(CFLAGS) -o cli-server cli-server.cpp connector-server.o -lpthread

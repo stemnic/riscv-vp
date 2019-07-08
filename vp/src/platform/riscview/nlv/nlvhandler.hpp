@@ -1,7 +1,9 @@
 #pragma once
 
-#include "wrapper.h"
 #include "elegantEnums.hpp"
+
+#include <string>
+#include <functional>
 
 namespace nlv
 {
@@ -20,7 +22,7 @@ class NLElement
 {
 public:
 	virtual ~NLElement();
-	virtual NlviewArgs toCommand() = 0;
+	virtual std::string toCommand() = 0;
 };
 
 
@@ -52,7 +54,7 @@ public:
 	std::string getName();
 	Direction& getDirection();
 
-	NlviewArgs toCommand() override;
+	std::string toCommand() override;
 };
 
 class Pin : public NLElement
@@ -64,7 +66,7 @@ public:
 	std::string getName();
 	Direction& getDirection();
 
-	NlviewArgs toCommand() override;
+	std::string toCommand() override;
 };
 
 class Instance;
@@ -83,7 +85,7 @@ public:
 	SType getStype();
 	std::vector<Pin>& getPins();
 
-	NlviewArgs toCommand() override;
+	std::string toCommand() override;
 	Instance instantiate(std::string name);
 };
 
@@ -113,7 +115,7 @@ public:
 	std::string getViewname();
 	PinInstance* getPin(Pin& pin);
 
-	NlviewArgs toCommand() override;
+	std::string toCommand() override;
 };
 
 class Connection : public NLElement
@@ -127,19 +129,17 @@ public:
 
 	void add(Connectable* element);
 
-	NlviewArgs toCommand() override;
+	std::string toCommand() override;
 };
 
 } //namespace nlv
 
 class NLVhandler
 {
-	NlvQWidget* nlview;
-
-	bool command(const char* command);
+	std::function<bool(const char*)> command = nullptr;
 
 public:
-	NLVhandler(NlvQWidget* nlview);
+	NLVhandler(std::function<bool(const char*)> command);
 
 	void init();
 
