@@ -24,7 +24,6 @@ class NLElement
 public:
 	virtual ~NLElement();
 	virtual std::list<std::string> load() = 0;
-	virtual std::list<std::string> update();
 };
 
 
@@ -117,9 +116,10 @@ public:
 	Symbol& getSymbol();
 	std::string getViewname();
 	PinInstance* getPin(Pin& pin);
-	void setText(std::string& text);
+	void setText(std::string text);
 
 	std::list<std::string> load() override;
+	virtual std::list<std::string> update();
 };
 
 class Connection : public NLElement
@@ -141,7 +141,6 @@ public:
 class NLVhandler
 {
 	std::function<bool(const char*)> command = nullptr;
-
 public:
 	NLVhandler(std::function<bool(const char*)> command);
 
@@ -150,4 +149,5 @@ public:
 	bool add(nlv::NLElement& elem);
 
 	void show();
+	bool update(nlv::Instance& elem);
 };

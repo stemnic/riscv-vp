@@ -7,7 +7,6 @@ IMPL_ENUM(SType);
 IMPL_ENUM(Direction);
 
 NLElement::~NLElement(){};
-std::list<std::string> NLElement::update(){ return std::list<std::string>({""}); };
 
 Connectable::Connectable(Connectable::Type type) : type(type){};
 Connectable::~Connectable(){};
@@ -70,7 +69,7 @@ PinInstance* Instance::getPin(Pin& pin)
 {
 	return pins[pin.getName()];
 }
-void Instance::setText(std::string& text){ this->text = text; };
+void Instance::setText(std::string text){ this->text = text; };
 std::list<std::string> Instance::load()
 {
 	std::list<std::string> list;
@@ -78,10 +77,20 @@ std::list<std::string> Instance::load()
 	cmd += "inst " + name + " " + symbol.getName() + " " + viewname;
 	std::cout << "Instance: " << cmd << std::endl;
 	list.push_back(cmd);
-	cmd = "cgraphic " + name + "text linkto {inst " + name + "} text \"Booger\nAids\" -ll 0 0 5 place bot 10 0";
+	cmd = "cgraphic " + name + "text linkto {inst " + name + "} text \"" + text + "\" -ll 0 0 5 place bot 10 0";
 	list.push_back(cmd);
 	return list;
 };
+std::list<std::string> Instance::update()
+{
+	std::list<std::string> list;
+	std::string cmd("unload cgraphic " + name + "text");
+	list.push_back(cmd);
+	cmd = "load cgraphic " + name + "text linkto {inst " + name + "} text \"" + text + "\" -ll 0 0 5 place bot 10 0";
+	list.push_back(cmd);
+	return list;
+}
+
 
 Connection::Connection(std::string name) : name(name){};
 Connection::Connection(std::string name, std::vector<Connectable*> list) : name(name), connectables(list){};
@@ -146,4 +155,18 @@ void NLVhandler::show()
 	command("show");
 	command("fullfit");
 	//command("increment");
+}
+
+bool NLVhandler::update(nlv::Instance& elem)
+{
+	for(std::string cmd : elem.update()){
+		std::cout << cmd << std::endl;
+
+		if(!command(cmd.c_str()))
+		{
+			std::cerr << "NLVHandler: Connection lost" << std::endl;
+			return false;
+		}
+	}
+	return true;
 }

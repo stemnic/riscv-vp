@@ -76,10 +76,26 @@ int main(int argc, char* argv[]) {
 
 	nlv.init();
 
+	std::string textlist[3] = {"Booger\nAids", "Aids\nBoogers", "CANCER"};
+	uint8_t textIndice = 0;
+
+	box1.setText(textlist[(textIndice++) % 3]);
+	box2.setText(textlist[(textIndice++) % 3]);
+
 	for (nlv::NLElement* element : elements)
 	{
 		nlv.add(*element);
 	}
 
 	nlv.show();
+
+	while(true)
+	{
+		usleep(500000);
+		box1.setText(textlist[(textIndice++) % 3]);
+		box2.setText(textlist[(textIndice++) % 3]);
+
+		nlv.update(box1);
+		nlv.update(box2);
+	}
 }
