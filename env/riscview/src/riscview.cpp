@@ -1,7 +1,6 @@
 #define QT_FATAL_ASSERT /* stop program, if an assertion failed using ASSERT */
 
 #include "riscview.h"
-#include "nlvhandler.hpp"
 
 #include <QLinearGradient>
 #include <QPainterPath>

@@ -15,14 +15,19 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
+	string domain = "localhost";
+	string port = "1333";
 	if (argc < 3) {
-		cout << "usage: " << argv[0] << " host port (e.g. localhost 1339)" << endl;
-		exit(-1);
+		cout << "usage: " << argv[0] << " host port (e.g. " << domain << " " << port << ")" << endl;
+	}
+	else{
+		domain = argv[1];
+		port   = argv[2];
 	}
 
 	NLVConnectorClient ncc;
 
-	if (!ncc.setupConnection(argv[1], argv[2])) {
+	if (!ncc.setupConnection(domain.c_str(), port.c_str())) {
 		cout << "can't setup connection" << endl;
 		return -1;
 	}
@@ -33,7 +38,7 @@ int main(int argc, char* argv[]) {
 			//load symbol ABOX vn BOX pin A IN pin B IN pin C OUT);
 	ncc.command("load inst ABOX1 ABOX v");
 	ncc.command("show");
-	ncc.command("load cgraphic sparta1 linkto {inst BOX2} text \"TX\n0xFF 0xAB\nRX\n0x00 0x00\" -ll 0 0 5 place left 20 20");
+	ncc.command("load cgraphic sparta2 linkto {inst BOX1} text \"Booger\nAids\nBrewt\" -ll 0 0 5 place bot 10 0);
 	*/
 
 

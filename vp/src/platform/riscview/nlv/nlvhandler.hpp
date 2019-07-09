@@ -3,6 +3,7 @@
 #include "elegantEnums.hpp"
 
 #include <string>
+#include <list>
 #include <functional>
 
 namespace nlv
@@ -22,7 +23,8 @@ class NLElement
 {
 public:
 	virtual ~NLElement();
-	virtual std::string toCommand() = 0;
+	virtual std::list<std::string> load() = 0;
+	virtual std::list<std::string> update();
 };
 
 
@@ -54,7 +56,7 @@ public:
 	std::string getName();
 	Direction& getDirection();
 
-	std::string toCommand() override;
+	std::list<std::string> load() override;
 };
 
 class Pin : public NLElement
@@ -66,7 +68,7 @@ public:
 	std::string getName();
 	Direction& getDirection();
 
-	std::string toCommand() override;
+	std::list<std::string> load() override;
 };
 
 class Instance;
@@ -85,7 +87,7 @@ public:
 	SType getStype();
 	std::vector<Pin>& getPins();
 
-	std::string toCommand() override;
+	std::list<std::string> load() override;
 	Instance instantiate(std::string name);
 };
 
@@ -107,6 +109,7 @@ class Instance : public NLElement
 	Symbol& symbol;
 	std::string viewname;
 	std::map<std::string, PinInstance*> pins;
+	std::string text;
 public:
 	Instance(std::string name, std::string viewname, Symbol& symbol);
 
@@ -114,8 +117,9 @@ public:
 	Symbol& getSymbol();
 	std::string getViewname();
 	PinInstance* getPin(Pin& pin);
+	void setText(std::string& text);
 
-	std::string toCommand() override;
+	std::list<std::string> load() override;
 };
 
 class Connection : public NLElement
@@ -129,7 +133,7 @@ public:
 
 	void add(Connectable* element);
 
-	std::string toCommand() override;
+	std::list<std::string> load() override;
 };
 
 } //namespace nlv

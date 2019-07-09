@@ -7,6 +7,7 @@ IMPL_ENUM(SType);
 IMPL_ENUM(Direction);
 
 NLElement::~NLElement(){};
+std::list<std::string> NLElement::update(){ return std::list<std::string>({""}); };
 
 Connectable::Connectable(Connectable::Type type) : type(type){};
 Connectable::~Connectable(){};
@@ -15,21 +16,21 @@ Connectable::Type Connectable::getType(){ return type; };
 Port::Port(std::string name, Direction direction) : Connectable(Connectable::Type::port), name(name), direction(direction){};
 std::string Port::getName() { return name; };
 Direction& Port::getDirection() { return direction; };
-std::string Port::toCommand()
+std::list<std::string> Port::load()
 {
 	std::string cmd;
 	cmd += "port " +  name + " " + ~direction;
-	return cmd;
+	return std::list<std::string>({cmd});
 }
 
 Pin::Pin(std::string name, Direction direction) : name(name), direction(direction){};
 std::string Pin::getName() { return name; };
 Direction& Pin::getDirection() { return direction; };
-std::string Pin::toCommand()
+std::list<std::string> Pin::load()
 {
 	std::string cmd;
 	cmd += "pin " + name + " " + ~direction;
-	return cmd;
+	return std::list<std::string>({cmd});
 };
 
 Symbol::Symbol(std::string name, std::string viewname, SType stype) : name(name), viewname(viewname), stype(stype){};
@@ -38,14 +39,14 @@ std::string Symbol::getName() { return name; };
 std::string Symbol::getViewname() { return viewname; };
 SType Symbol::getStype() { return stype; };
 std::vector<Pin>& Symbol::getPins() { return pins; };
-std::string Symbol::toCommand()
+std::list<std::string> Symbol::load()
 {
 	std::string cmd;
 	cmd += "symbol " + name + " " + viewname + " " + ~stype;
 	for (std::vector<Pin>::iterator it = pins.begin() ; it != pins.end(); ++it)
-		cmd += " " + it->toCommand();
+		cmd += " " + it->load().front();
 	std::cout << "Symbol: " << cmd << std::endl;
-	return cmd;
+	return std::list<std::string>({cmd});
 };
 Instance Symbol::instantiate(std::string name)
 {
@@ -69,12 +70,17 @@ PinInstance* Instance::getPin(Pin& pin)
 {
 	return pins[pin.getName()];
 }
-std::string Instance::toCommand()
+void Instance::setText(std::string& text){ this->text = text; };
+std::list<std::string> Instance::load()
 {
+	std::list<std::string> list;
 	std::string cmd;
 	cmd += "inst " + name + " " + symbol.getName() + " " + viewname;
 	std::cout << "Instance: " << cmd << std::endl;
-	return cmd;
+	list.push_back(cmd);
+	cmd = "cgraphic " + name + "text linkto {inst " + name + "} text \"Booger\nAids\" -ll 0 0 5 place bot 10 0";
+	list.push_back(cmd);
+	return list;
 };
 
 Connection::Connection(std::string name) : name(name){};
@@ -84,7 +90,7 @@ void Connection::add(Connectable* element)
 	connectables.push_back(element);
 }
 
-std::string Connection::toCommand()
+std::list<std::string> Connection::load()
 {
 	std::string cmd;
 	cmd += "net " + name;
@@ -103,7 +109,7 @@ std::string Connection::toCommand()
 			break;
 		}
 	}
-	return cmd;
+	return std::list<std::string>({cmd});
 }
 
 }; //end namespace nlv
@@ -120,15 +126,17 @@ void NLVhandler::init()
 
 bool NLVhandler::add(nlv::NLElement& elem)
 {
-	std::string arg;
-	arg = "load ";
-	arg += elem.toCommand();
-	std::cout << arg << std::endl;
+	for(std::string cmd : elem.load()){
+		std::string arg;
+		arg = "load ";
+		arg += cmd;
+		std::cout << arg << std::endl;
 
-	if(!command(arg.c_str()))
-	{
-		std::cerr << "NLVHandler: Connection lost" << std::endl;
-		return false;
+		if(!command(arg.c_str()))
+		{
+			std::cerr << "NLVHandler: Connection lost" << std::endl;
+			return false;
+		}
 	}
 	return true;
 }

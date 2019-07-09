@@ -52,9 +52,9 @@ static {
 HEADERS  += $$ROOTPATH/src/riscview.h
 SOURCES  += $$ROOTPATH/src/riscview.cpp
 
-HEADERS  += $$ROOTPATH/src/nlvhandler.hpp
-SOURCES  += $$ROOTPATH/src/nlvhandler.cpp
-SOURCES  += $$ROOTPATH/src/elegantEnums.cpp
+#HEADERS  += $$ROOTPATH/src/nlvhandler.hpp
+#SOURCES  += $$ROOTPATH/src/nlvhandler.cpp
+#SOURCES  += $$ROOTPATH/src/elegantEnums.cpp
 
 HEADERS += $$ROOTPATH/src/wrapper.h
 SOURCES += $$ROOTPATH/src/wrapper.cpp
