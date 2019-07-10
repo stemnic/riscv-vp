@@ -45,57 +45,48 @@ int main(int argc, char* argv[]) {
 	NLVhandler nlv(std::bind(&NLVConnectorClient::command, &ncc, placeholders::_1));
 
 
-	std::list<nlv::NLElement*> elements;
-
 	nlv::Port in1("IN1", nlv::Direction::IN), in2("IN2", nlv::Direction::IN);
 	nlv::Port out1("OUT1", nlv::Direction::OUT);
-	elements.push_back(&in1);
-	elements.push_back(&in2);
-	elements.push_back(&out1);
+	nlv.add(in1);
+	nlv.add(in2);
+	nlv.add(out1);
 
 	nlv::Pin a("A", nlv::Direction::IN), b("B", nlv::Direction::IN), c("C", nlv::Direction::OUT);
 	nlv::Symbol abox("ABOX", "vn", nlv::SType::BOX, {a,b,c});
-	elements.push_back(&abox);
+	nlv.add(abox);
 
 	nlv::Instance box1 = abox.instantiate("BOX1");
 	nlv::Instance box2 = abox.instantiate("BOX2");
-	elements.push_back(&box1);
-	elements.push_back(&box2);
+	nlv.add(box1);
+	nlv.add(box2);
 
 	nlv::Connection l1("l1");
 	l1.add(&in1);
 	l1.add(box1.getPin(a));
 	l1.add(box2.getPin(a));
-	elements.push_back(&l1);
+	nlv.add(l1);
 
 	nlv::Connection l2("l2", {box1.getPin(c), box2.getPin(c), &out1});
-	elements.push_back(&l2);
+	nlv.add(l2);
 
 	nlv::Connection l3("l3", {&in2, box1.getPin(b), box2.getPin(b)});
-	elements.push_back(&l3);
+	nlv.add(l3);
 
-	nlv.init();
-
-	std::string textlist[3] = {"Booger\nAids", "Aids\nBoogers", "CANCER"};
+	std::vector<std::string> textlist({"Booger\nAids", "Aids\nBoogers", "CANCER", "", "bleep"});
 	uint8_t textIndice = 0;
 
-	box1.setText(textlist[(textIndice++) % 3]);
-	box2.setText(textlist[(textIndice++) % 3]);
+	box1.setText(textlist[(textIndice++) % textlist.size()]);
+	box2.setText(textlist[(textIndice++) % textlist.size()]);
 
-	for (nlv::NLElement* element : elements)
-	{
-		nlv.add(*element);
-	}
-
-	nlv.show();
+	if(!nlv.init()) return -1;
+	if(!nlv.show()) return -2;
 
 	while(true)
 	{
 		usleep(500000);
-		box1.setText(textlist[(textIndice++) % 3]);
-		box2.setText(textlist[(textIndice++) % 3]);
+		box1.setText(textlist[(textIndice++) % textlist.size()]);
+		box2.setText(textlist[(textIndice++) % textlist.size()]);
 
-		nlv.update(box1);
-		nlv.update(box2);
+		if(!nlv.update()) return -3;
 	}
 }

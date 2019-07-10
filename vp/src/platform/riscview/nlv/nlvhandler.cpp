@@ -7,6 +7,7 @@ IMPL_ENUM(SType);
 IMPL_ENUM(Direction);
 
 NLElement::~NLElement(){};
+Commandlist NLElement::update(){ return Commandlist(); };
 
 Connectable::Connectable(Connectable::Type type) : type(type){};
 Connectable::~Connectable(){};
@@ -15,21 +16,19 @@ Connectable::Type Connectable::getType(){ return type; };
 Port::Port(std::string name, Direction direction) : Connectable(Connectable::Type::port), name(name), direction(direction){};
 std::string Port::getName() { return name; };
 Direction& Port::getDirection() { return direction; };
-std::list<std::string> Port::load()
+Commandlist Port::load()
 {
-	std::string cmd;
-	cmd += "port " +  name + " " + ~direction;
-	return std::list<std::string>({cmd});
+	Command cmd("port " + name + " " + ~direction);
+	return Commandlist({cmd});
 }
 
 Pin::Pin(std::string name, Direction direction) : name(name), direction(direction){};
 std::string Pin::getName() { return name; };
 Direction& Pin::getDirection() { return direction; };
-std::list<std::string> Pin::load()
+Commandlist Pin::load()
 {
-	std::string cmd;
-	cmd += "pin " + name + " " + ~direction;
-	return std::list<std::string>({cmd});
+	Command cmd("pin " + name + " " + ~direction);
+	return Commandlist({cmd});
 };
 
 Symbol::Symbol(std::string name, std::string viewname, SType stype) : name(name), viewname(viewname), stype(stype){};
@@ -38,14 +37,13 @@ std::string Symbol::getName() { return name; };
 std::string Symbol::getViewname() { return viewname; };
 SType Symbol::getStype() { return stype; };
 std::vector<Pin>& Symbol::getPins() { return pins; };
-std::list<std::string> Symbol::load()
+Commandlist Symbol::load()
 {
-	std::string cmd;
-	cmd += "symbol " + name + " " + viewname + " " + ~stype;
+	Command cmd("symbol " + name + " " + viewname + " " + ~stype);
 	for (std::vector<Pin>::iterator it = pins.begin() ; it != pins.end(); ++it)
 		cmd += " " + it->load().front();
 	std::cout << "Symbol: " << cmd << std::endl;
-	return std::list<std::string>({cmd});
+	return Commandlist({cmd});
 };
 Instance Symbol::instantiate(std::string name)
 {
@@ -69,21 +67,27 @@ PinInstance* Instance::getPin(Pin& pin)
 {
 	return pins[pin.getName()];
 }
-void Instance::setText(std::string text){ this->text = text; };
-std::list<std::string> Instance::load()
+void Instance::setText(std::string text){
+	this->text = text;
+	changed = true;
+};
+Commandlist Instance::load()
 {
-	std::list<std::string> list;
-	std::string cmd;
-	cmd += "inst " + name + " " + symbol.getName() + " " + viewname;
+	if(!changed)
+		return Commandlist();
+
+	Commandlist list;
+	Command cmd("inst " + name + " " + symbol.getName() + " " + viewname);
 	std::cout << "Instance: " << cmd << std::endl;
 	list.push_back(cmd);
 	cmd = "cgraphic " + name + "text linkto {inst " + name + "} text \"" + text + "\" -ll 0 0 5 place bot 10 0";
 	list.push_back(cmd);
+	changed = false;
 	return list;
 };
-std::list<std::string> Instance::update()
+Commandlist Instance::update()
 {
-	std::list<std::string> list;
+	Commandlist list;
 	std::string cmd("unload cgraphic " + name + "text");
 	list.push_back(cmd);
 	cmd = "load cgraphic " + name + "text linkto {inst " + name + "} text \"" + text + "\" -ll 0 0 5 place bot 10 0";
@@ -99,9 +103,9 @@ void Connection::add(Connectable* element)
 	connectables.push_back(element);
 }
 
-std::list<std::string> Connection::load()
+Commandlist Connection::load()
 {
-	std::string cmd;
+	Command cmd;
 	cmd += "net " + name;
 	for (std::vector<Connectable*>::iterator it = connectables.begin() ; it != connectables.end(); ++it)
 	{
@@ -118,54 +122,65 @@ std::list<std::string> Connection::load()
 			break;
 		}
 	}
-	return std::list<std::string>({cmd});
+	return Commandlist({cmd});
 }
 
 }; //end namespace nlv
 
 
-NLVhandler::NLVhandler(std::function<bool(const char*)> command) : command(command){};
+NLVhandler::NLVhandler(std::function<bool(const char*)> command) : sendCommand(command){};
 
 
-void NLVhandler::init()
+
+void NLVhandler::add(std::list<nlv::NLElement*>& elements)
 {
-	command("clear");
-	command("module new module");
+	mElements.splice(mElements.end(), elements);
 }
 
-bool NLVhandler::add(nlv::NLElement& elem)
+void NLVhandler::add(nlv::NLElement& elem)
 {
-	for(std::string cmd : elem.load()){
-		std::string arg;
-		arg = "load ";
-		arg += cmd;
-		std::cout << arg << std::endl;
+	mElements.push_back(&elem);
+}
 
-		if(!command(arg.c_str()))
+bool NLVhandler::init()
+{
+	sendCommand("clear");
+	sendCommand("module new module");
+	for(nlv::NLElement* elem : mElements)
+	{
+		for(nlv::Command cmd : elem->load())
 		{
-			std::cerr << "NLVHandler: Connection lost" << std::endl;
-			return false;
+			if(!sendCommand(("load " + cmd).c_str()))
+			{
+				std::cerr << "NLVHandler: Connection lost" << std::endl;
+				return false;
+			}
 		}
 	}
 	return true;
 }
 
-void NLVhandler::show()
+bool NLVhandler::show()
 {
-	command("show");
-	command("fullfit");
-	//command("increment");
+	if(!sendCommand("show")) return false;
+	if(!sendCommand("fullfit")) return false;
+	//sendCommand("increment");
+	return true;
 }
 
-bool NLVhandler::update(nlv::Instance& elem)
+bool NLVhandler::update()
 {
-	for(std::string cmd : elem.update()){
-		std::cout << cmd << std::endl;
+	//Loop des todes of doom
+	for(nlv::NLElement* elem : mElements)
+	{
+		for(nlv::Command cmd : elem->update()){
+			std::cout << cmd << std::endl;
 
-		if(!command(cmd.c_str()))
-		{
-			std::cerr << "NLVHandler: Connection lost" << std::endl;
-			return false;
+			if(!sendCommand(cmd.c_str()))
+			{
+				std::cerr << "NLVHandler: Connection lost" << std::endl;
+				return false;
+			}
 		}
 	}
 	return true;

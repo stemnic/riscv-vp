@@ -19,11 +19,15 @@ DECLARE_ENUM(Direction,
 		OUT,
 		INOUT);
 
+typedef std::string Command;
+typedef std::list<Command> Commandlist;
+
 class NLElement
 {
 public:
 	virtual ~NLElement();
-	virtual std::list<std::string> load() = 0;
+	virtual Commandlist load() = 0;
+	virtual Commandlist update();
 };
 
 
@@ -55,7 +59,7 @@ public:
 	std::string getName();
 	Direction& getDirection();
 
-	std::list<std::string> load() override;
+	Commandlist load() override;
 };
 
 class Pin : public NLElement
@@ -67,7 +71,7 @@ public:
 	std::string getName();
 	Direction& getDirection();
 
-	std::list<std::string> load() override;
+	Commandlist load() override;
 };
 
 class Instance;
@@ -86,7 +90,7 @@ public:
 	SType getStype();
 	std::vector<Pin>& getPins();
 
-	std::list<std::string> load() override;
+	Commandlist load() override;
 	Instance instantiate(std::string name);
 };
 
@@ -109,6 +113,8 @@ class Instance : public NLElement
 	std::string viewname;
 	std::map<std::string, PinInstance*> pins;
 	std::string text;
+	bool changed = false;
+
 public:
 	Instance(std::string name, std::string viewname, Symbol& symbol);
 
@@ -118,8 +124,8 @@ public:
 	PinInstance* getPin(Pin& pin);
 	void setText(std::string text);
 
-	std::list<std::string> load() override;
-	virtual std::list<std::string> update();
+	Commandlist load() override;
+	virtual Commandlist update();
 };
 
 class Connection : public NLElement
@@ -133,21 +139,22 @@ public:
 
 	void add(Connectable* element);
 
-	std::list<std::string> load() override;
+	Commandlist load() override;
 };
 
 } //namespace nlv
 
 class NLVhandler
 {
-	std::function<bool(const char*)> command = nullptr;
+	std::function<bool(const char*)> sendCommand = nullptr;
+	std::list<nlv::NLElement*> mElements;
 public:
 	NLVhandler(std::function<bool(const char*)> command);
 
-	void init();
+	void add(std::list<nlv::NLElement*>& elements);
+	void add(nlv::NLElement& elem);
 
-	bool add(nlv::NLElement& elem);
-
-	void show();
-	bool update(nlv::Instance& elem);
+	bool init();
+	bool show();
+	bool update();
 };
