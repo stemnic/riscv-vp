@@ -73,25 +73,25 @@ void Instance::setText(std::string text){
 };
 Commandlist Instance::load()
 {
-	if(!changed)
-		return Commandlist();
-
 	Commandlist list;
 	Command cmd("inst " + name + " " + symbol.getName() + " " + viewname);
 	std::cout << "Instance: " << cmd << std::endl;
 	list.push_back(cmd);
 	cmd = "cgraphic " + name + "text linkto {inst " + name + "} text \"" + text + "\" -ll 0 0 5 place bot 10 0";
 	list.push_back(cmd);
-	changed = false;
 	return list;
 };
 Commandlist Instance::update()
 {
+	if(!changed)
+		return Commandlist();
+
 	Commandlist list;
 	std::string cmd("unload cgraphic " + name + "text");
 	list.push_back(cmd);
 	cmd = "load cgraphic " + name + "text linkto {inst " + name + "} text \"" + text + "\" -ll 0 0 5 place bot 10 0";
 	list.push_back(cmd);
+	changed = false;
 	return list;
 }
 
@@ -102,7 +102,10 @@ void Connection::add(Connectable* element)
 {
 	connectables.push_back(element);
 }
-
+void Connection::setText(std::string text){
+	this->text = text;
+	changed = true;
+};
 Commandlist Connection::load()
 {
 	Command cmd;
@@ -123,6 +126,21 @@ Commandlist Connection::load()
 		}
 	}
 	return Commandlist({cmd});
+}
+
+
+Commandlist Connection::update()
+{
+	if(!changed)
+		return Commandlist();
+
+	Commandlist list;
+	std::string cmd("unload cgraphic " + name + "text");
+	list.push_back(cmd);
+	cmd = "load cgraphic " + name + "text linkto {net " + name + "} text \"" + text + "\" -ll 0 0 5 place top 0 0";
+	list.push_back(cmd);
+	changed = false;
+	return list;
 }
 
 }; //end namespace nlv

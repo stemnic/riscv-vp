@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
 	ncc.command("load inst ABOX1 ABOX v");
 	ncc.command("show");
 	ncc.command("load cgraphic sparta2 linkto {inst BOX1} text \"Booger\nAids\nBrewt\" -ll 0 0 5 place bot 10 0);
+	ncc.command("load cgraphic sparta3 linkto {inst BOX1} text \"Booger\nAids\nBrewt\" -ll 0 0 5 place bot 10 0);
 	*/
 
 
@@ -65,14 +66,17 @@ int main(int argc, char* argv[]) {
 	l1.add(box1.getPin(a));
 	l1.add(box2.getPin(a));
 	nlv.add(l1);
+	uint8_t l1ExampleCounter = 0;
 
 	nlv::Connection l2("l2", {box1.getPin(c), box2.getPin(c), &out1});
 	nlv.add(l2);
+	uint8_t l2ExampleCounter = 0;
 
 	nlv::Connection l3("l3", {&in2, box1.getPin(b), box2.getPin(b)});
 	nlv.add(l3);
+	uint8_t l3ExampleCounter = 0;
 
-	std::vector<std::string> textlist({"Booger\nAids", "Aids\nBoogers", "CANCER", "", "bleep"});
+	std::vector<std::string> textlist({"Bloop", "bop", "bleep"});
 	uint8_t textIndice = 0;
 
 	box1.setText(textlist[(textIndice++) % textlist.size()]);
@@ -86,6 +90,14 @@ int main(int argc, char* argv[]) {
 		usleep(500000);
 		box1.setText(textlist[(textIndice++) % textlist.size()]);
 		box2.setText(textlist[(textIndice++) % textlist.size()]);
+
+		l1ExampleCounter+= 1;
+		l2ExampleCounter+= 2;
+		l3ExampleCounter+= 3;
+
+		l1.setText(to_string(l1ExampleCounter));
+		l2.setText(to_string(l2ExampleCounter));
+		l3.setText(to_string(l3ExampleCounter));
 
 		if(!nlv.update()) return -3;
 	}

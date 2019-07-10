@@ -112,7 +112,8 @@ class Instance : public NLElement
 	Symbol& symbol;
 	std::string viewname;
 	std::map<std::string, PinInstance*> pins;
-	std::string text;
+
+	std::string text;		//Maybe capsule in Class 'updatable' ?
 	bool changed = false;
 
 public:
@@ -133,13 +134,18 @@ class Connection : public NLElement
 	std::string name;
 	std::vector<Connectable*> connectables;
 
+	std::string text;		//Maybe capsule in Class 'updatable' ?
+	bool changed = false;
+
 public:
 	Connection(std::string name);
 	Connection(std::string name, std::vector<Connectable*> list);
 
 	void add(Connectable* element);
+	void setText(std::string text);
 
 	Commandlist load() override;
+	Commandlist update() override;
 };
 
 } //namespace nlv
