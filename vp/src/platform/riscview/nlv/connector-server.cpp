@@ -135,22 +135,46 @@ void NLVConnectorServer::listener() {
 
 
 void NLVConnectorServer::handleConnection(int conn) {
-	static char buffer[10000]; //This should not overflow, probably.
-	int bytes;
-	uint16_t bytesToBeReceived = 0;
+	static constexpr size_t bufsize = 10000; //This should not overflow, probably.
+	static char buffer[bufsize];
+	int bytesRead;
+	uint16_t bufferPtr;
+	uint16_t bytesToBeReceived;
 
 	while (true) {
-		if(read(conn, &bytesToBeReceived, sizeof(uint16_t)) != sizeof(uint16_t)){
-			std::cerr << "nlv-connector: Client misaligned (header)" << std::endl;
-			break;
+		bufferPtr = 0;
+		do
+		{
+			if((bytesRead = read(conn, &bytesToBeReceived, sizeof(uint16_t) - bufferPtr)) <= 0){
+				std::cerr << "nlv-connector: Client disconnected (header)" << std::endl;
+
+				goto cleanup;
+			}
+			bufferPtr += bytesRead;
+		}while(bufferPtr < sizeof(uint16_t));
+
+		if(bytesToBeReceived == 0 || bytesToBeReceived >= bufsize)
+		{
+			std::cerr << "nlv-connector: Client misaligned (message length unplausible)" << std::endl;
+
+			goto cleanup;
 		}
-		if(read(conn, buffer, bytesToBeReceived) != bytesToBeReceived){
-			std::cerr << "nlv-connector: Client misaligned (body)" << std::endl;
-			break;
-		}
+
+		bufferPtr = 0;
+		do
+		{
+			if((bytesRead = read(conn, buffer, bytesToBeReceived - bufferPtr)) <= 0){
+				std::cerr << "nlv-connector: Client disconnected (body)" << std::endl;
+
+				goto cleanup;
+			}
+			bufferPtr += bytesRead;
+		} while(bufferPtr < bytesToBeReceived);
+
 		buffer[bytesToBeReceived] = 0;	//Wow. This beautiful magic.
 		fun(buffer);
 	}
-	std::cout << "nlv-connector disconnected. (" << bytes << ")" << std::endl;
+cleanup:
+	std::cout << "nlv-connector disconnected. (" << conn << ")" << std::endl;
 	close(conn);
 }

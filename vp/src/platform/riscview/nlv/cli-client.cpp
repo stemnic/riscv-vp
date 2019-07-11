@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
 
 	while(true)
 	{
-		usleep(500000);
+		usleep(50000);
 		box1.setText(textlist[(textIndice++) % textlist.size()]);
 		box2.setText(textlist[(textIndice++) % textlist.size()]);
 
