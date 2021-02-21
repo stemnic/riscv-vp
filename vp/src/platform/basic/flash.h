@@ -1,7 +1,16 @@
 #pragma once
 
 #include <fcntl.h>
+
+#ifdef __APPLE__
+#define BLKGETSIZE64 DKIOCGETBLOCKSIZE
+#define lseek64 lseek
+#define open64 open
+#include <sys/disk.h>
+#else
 #include <linux/fs.h>
+#endif
+
 #include <stdint.h>
 #include <sys/ioctl.h>
 #include <unistd.h>  //truncate
