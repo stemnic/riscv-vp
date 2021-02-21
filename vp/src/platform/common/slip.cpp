@@ -11,7 +11,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#if defined(__APPLE__)
+#ifdef __APPLE__
 #include <net/if.h>
 
 /* Ioctl defines */
