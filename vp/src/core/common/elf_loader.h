@@ -39,6 +39,9 @@ struct GenericElfLoader {
 			if ((p->p_filesz == 0) && (p->p_memsz == 0))
 				continue;
 
+			if ((p->p_filesz == 0) && (p->p_memsz == 0))
+				continue;
+
 			sections.push_back(p);
 		}
 

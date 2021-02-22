@@ -92,7 +92,9 @@ SLIP::~SLIP(void) {
 		free(rcvbuf);
 		rcvbuf = NULL;
 	}
-	close(tunfd);
+
+	if (tunfd > 0)
+		close(tunfd);
 }
 
 int SLIP::get_mtu(const char *dev) {
