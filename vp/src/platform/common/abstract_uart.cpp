@@ -54,11 +54,25 @@ AbstractUART::AbstractUART(sc_core::sc_module_name, uint32_t irqsrc) {
 	stop = false;
 	if (pipe(stop_pipe) == -1)
 		throw std::system_error(errno, std::generic_category());
-	if (sem_init(&txfull, 0, 0))
-		throw std::system_error(errno, std::generic_category());
-	if (sem_init(&rxempty, 0, UART_FIFO_DEPTH))
-		throw std::system_error(errno, std::generic_category());
 
+#ifdef __APPLE__
+	sem_unlink("autx0");
+	txfull_p = sem_open("autx0", O_CREAT | O_EXCL, 0700, 0);
+	if (txfull_p == SEM_FAILED) {
+#else
+	if (sem_init(&txfull, 0, 0)) {
+#endif
+		throw std::system_error(errno, std::generic_category());
+	}
+#ifdef __APPLE__
+	sem_unlink("aurx0");
+	rxempty_p = sem_open("aurx0",O_CREAT | O_EXCL, 0700, UART_FIFO_DEPTH);
+	if (rxempty_p == SEM_FAILED) {
+#else
+	if (sem_init(&rxempty, 0, UART_FIFO_DEPTH)) {
+#endif
+		throw std::system_error(errno, std::generic_category());
+	}
 	SC_METHOD(interrupt);
 	sensitive << asyncEvent;
 	dont_initialize();
@@ -68,7 +82,11 @@ AbstractUART::~AbstractUART(void) {
 	stop = true;
 
 	if (txthr) {
-		spost(&txfull); // unblock transmit thread
+#ifdef __APPLE__
+		spost(txfull_p); // unblock transmit thread
+#else
+		spost(&txfull);
+#endif
 		txthr->join();
 		delete txthr;
 	}
@@ -84,8 +102,15 @@ AbstractUART::~AbstractUART(void) {
 	close(stop_pipe[0]);
 	close(stop_pipe[1]);
 
+#ifdef __APPLE__
+	sem_unlink("autx0");
+	sem_close(txfull_p);
+	sem_unlink("aurx0");
+	sem_close(rxempty_p);
+#else
 	sem_destroy(&txfull);
 	sem_destroy(&rxempty);
+#endif
 }
 
 void AbstractUART::start_threads(int fd) {
@@ -97,7 +122,11 @@ void AbstractUART::start_threads(int fd) {
 }
 
 void AbstractUART::rxpush(uint8_t data) {
+#ifdef __APPLE__
+	swait(rxempty_p);
+#else
 	swait(&rxempty);
+#endif
 	rcvmtx.lock();
 	rx_fifo.push(data);
 	rcvmtx.unlock();
@@ -117,7 +146,11 @@ void AbstractUART::register_access_callback(const vp::map::register_access_t &r)
 			} else {
 				rxdata = rx_fifo.front();
 				rx_fifo.pop();
+#ifdef __APPLE__
+				spost(rxempty_p);
+#else
 				spost(&rxempty);
+#endif
 			}
 
 			rcvmtx.unlock();
@@ -169,7 +202,11 @@ void AbstractUART::register_access_callback(const vp::map::register_access_t &r)
 
 		tx_fifo.push(txdata);
 		txmtx.unlock();
+#ifdef __APPLE__
+		spost(txfull_p);
+#else
 		spost(&txfull);
+#endif
 	}
 }
 
@@ -181,7 +218,11 @@ void AbstractUART::transmit(void) {
 	uint8_t data;
 
 	while (!stop) {
+#ifdef __APPLE__
+		swait(txfull_p);
+#else
 		swait(&txfull);
+#endif
 		if (stop) break;
 
 		txmtx.lock();
@@ -250,3 +291,4 @@ void AbstractUART::spost(sem_t *sem) {
 	if (sem_post(sem))
 		throw std::system_error(errno, std::generic_category());
 }
+	
