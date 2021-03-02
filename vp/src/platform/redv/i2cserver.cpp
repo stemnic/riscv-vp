@@ -88,7 +88,6 @@ uint8_t I2CServer::process_i2c(uint8_t f_reg, uint8_t f_in) {
         }
     }
 
-    sleep(1);
     // if nothing worked, nothing is happend.
     return l_return[0];
 }
