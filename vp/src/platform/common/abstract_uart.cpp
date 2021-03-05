@@ -89,14 +89,17 @@ AbstractUART::~AbstractUART(void) {
 #endif
 		txthr->join();
 		delete txthr;
+		txthr = NULL;
 	}
 
 	if (rcvthr) {
 		uint8_t byte = 0;
 		if (write(stop_pipe[1], &byte, sizeof(byte)) == -1) // unblock receive thread
-			err(EXIT_FAILURE, "couldn't unblock uart receive thread");
+		 	err(EXIT_FAILURE, "couldn't unblock uart receive thread");
+
 		rcvthr->join();
 		delete rcvthr;
+		rcvthr = NULL;
 	}
 
 	close(stop_pipe[0]);
@@ -114,11 +117,17 @@ AbstractUART::~AbstractUART(void) {
 }
 
 void AbstractUART::start_threads(int fd) {
+//	stop_threads();
+
 	fds[0] = newpollfd(stop_fd);
 	fds[1] = newpollfd(fd);
 
-	rcvthr = new std::thread(&AbstractUART::receive, this);
-	txthr = new std::thread(&AbstractUART::transmit, this);
+	if (!rcvthr)
+		rcvthr = new std::thread(&AbstractUART::receive, this);
+	if (!txthr)
+		txthr = new std::thread(&AbstractUART::transmit, this);
+
+	stop = false;
 }
 
 void AbstractUART::rxpush(uint8_t data) {

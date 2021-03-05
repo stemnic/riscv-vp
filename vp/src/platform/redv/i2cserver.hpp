@@ -5,7 +5,7 @@
 #include <boost/asio.hpp>
 #include <thread>
 
-#include "i2c.h"
+#include "i2c.hpp"
 
 class I2CServer : public I2C {
    public:

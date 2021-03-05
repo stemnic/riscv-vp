@@ -16,7 +16,7 @@
 #include "prci.h"
 #include "slip.h"
 #include "spi.h"
-#include "uart.h"
+#include "uartsocket.hpp"
 #include "i2cserver.hpp"
 #include "oled.hpp"
 #include "platform/common/options.h"
@@ -136,7 +136,7 @@ int sc_main(int argc, char **argv) {
 	
 	
 	SPI spi2("SPI2");
-	UART uart0("UART0", 3);
+	UARTSocket uart0("UART0", 3);
 	SLIP slip("SLIP", 4, opt.tun_device);
 	MaskROM maskROM("MASKROM");
 	DebugMemoryInterface dbg_if("DebugMemoryInterface");

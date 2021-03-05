@@ -1,5 +1,6 @@
 add_executable(redv-vp
         redv_main.cpp
+        uartsocket.cpp
         can.cpp
         oled.cpp
         gpio.cpp
