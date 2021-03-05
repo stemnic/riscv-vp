@@ -32,7 +32,7 @@ public:
     }
 
     // start processing of i2c transmissions
-    void run();
+    bool run();
 
 protected:
     // required for specific i2c handling

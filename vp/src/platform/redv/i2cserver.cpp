@@ -18,7 +18,7 @@ I2CServer::I2CServer() :
             if (!m_stop.load()) {
                 std::cout << "WAIT FOR I2C CLIENT" << std::endl;
                 m_acceptor.accept(m_socket);
-                std::cout << " CONNECTED TO I2C CLIENT" << std::endl;
+                std::cout << "CONNECTED TO I2C CLIENT" << std::endl;
                 m_stop.store(true);
             }
         }
