@@ -5,6 +5,8 @@
 
 using namespace boost;
 
+#define BOOST_SPIRIT_DEBUG
+#include <boost/spirit/include/qi.hpp>
 
 void I2CClient::run()
 {
@@ -24,11 +26,11 @@ void I2CClient::run()
       asio::read(l_socket, asio::buffer(dataReceived, 2), error);
       if (error)
       {
-        std::cout << error.message() << std::endl;
+        BOOST_SPIRIT_DEBUG_OUT << error.message() << std::endl;
       }
       else
       {
-        std::cout << "RECEIVED  " << std::hex << int(dataReceived[0]) << " " << int(dataReceived[1]) << std::endl;
+        BOOST_SPIRIT_DEBUG_OUT << "RECEIVED  " << std::hex << int(dataReceived[0]) << " " << int(dataReceived[1]) << std::endl;
       }
 
       dataToSend[0] = 0;
@@ -36,8 +38,8 @@ void I2CClient::run()
 
       if (crsr && dataReceived[1] & (1 << I2C_CMD_STO))
       {
-        std::cout << "GOT STO" << std::endl;
-        std::cout << "RESET TO IDLE" << std::endl;
+        BOOST_SPIRIT_DEBUG_OUT << "GOT STO" << std::endl;
+        BOOST_SPIRIT_DEBUG_OUT << "RESET TO IDLE" << std::endl;
         m_state = IDLE;
       }
 
@@ -47,8 +49,8 @@ void I2CClient::run()
       case IDLE:
         if (crsr && dataReceived[1] & (1 << I2C_CMD_STA))
         {
-          std::cout << "GOT STA" << std::endl;
-          std::cout << "IDLE -> ADDRESS" << std::endl;
+          BOOST_SPIRIT_DEBUG_OUT << "GOT STA" << std::endl;
+          BOOST_SPIRIT_DEBUG_OUT << "IDLE -> ADDRESS" << std::endl;
           m_state = ADDRESS;
         }
         break;
@@ -59,19 +61,19 @@ void I2CClient::run()
         {
           if (dataReceived[1] & 0x1)
           {
-            std::cout << "ADDRESS -> READ" << std::endl;
+            BOOST_SPIRIT_DEBUG_OUT << "ADDRESS -> READ" << std::endl;
             m_state = READ;
           }
           else
           {
-            std::cout << "ADDRESS -> REGISTER" << std::endl;
+            BOOST_SPIRIT_DEBUG_OUT << "ADDRESS -> REGISTER" << std::endl;
             m_state = REGISTER;
           }
           dataToSend[0] = (1 << I2C_CMD_ACK);
         }
         else
         {
-          std::cout << "ADDRESS -> IDLE" << std::endl;
+          BOOST_SPIRIT_DEBUG_OUT << "ADDRESS -> IDLE" << std::endl;
           m_state = IDLE;
         }
         break;
@@ -79,8 +81,8 @@ void I2CClient::run()
         if (crsr)
           break;
         m_regPointer = dataReceived[1];
-        std::cout << "SET POINTER " << std::hex << int(m_regPointer) << std::endl;
-        std::cout << "ADDRESS -> WRITE" << std::endl;
+        BOOST_SPIRIT_DEBUG_OUT << "SET POINTER " << std::hex << int(m_regPointer) << std::endl;
+        BOOST_SPIRIT_DEBUG_OUT << "ADDRESS -> WRITE" << std::endl;
         m_state = WRITE;
         dataToSend[0] = (1 << I2C_CMD_ACK);
         break;
@@ -88,15 +90,15 @@ void I2CClient::run()
         if (crsr && dataReceived[1] & (1 << I2C_CMD_STA))
         {
           m_state = ADDRESS;
-          std::cout << "GOT STA" << std::endl;
-          std::cout << "WRITE -> ADDRESS" << std::endl;
+          BOOST_SPIRIT_DEBUG_OUT << "GOT STA" << std::endl;
+          BOOST_SPIRIT_DEBUG_OUT << "WRITE -> ADDRESS" << std::endl;
         }
         else
         {
           m_state = WRITE;
           writeRegister(m_regPointer, dataReceived[1]);
-          std::cout << "SET " << m_regPointer << " TO " << int(dataReceived[1]) << std::endl;
-          std::cout << "WRITE -> WRITE" << std::endl;
+          BOOST_SPIRIT_DEBUG_OUT << "SET " << m_regPointer << " TO " << int(dataReceived[1]) << std::endl;
+          BOOST_SPIRIT_DEBUG_OUT << "WRITE -> WRITE" << std::endl;
           dataToSend[0] = (1 << I2C_CMD_ACK);
         }
         break;
@@ -104,15 +106,15 @@ void I2CClient::run()
         if (crsr && dataReceived[1] & (1 << I2C_CMD_ACK))
         {
           m_state = IDLE;
-          std::cout << "GOT ACK" << std::endl;
-          std::cout << "READ -> IDLE" << std::endl;
+          BOOST_SPIRIT_DEBUG_OUT << "GOT ACK" << std::endl;
+          BOOST_SPIRIT_DEBUG_OUT << "READ -> IDLE" << std::endl;
         }
         else
         {
           m_state = READ;
-          std::cout << "READ -> READ" << std::endl;
+          BOOST_SPIRIT_DEBUG_OUT << "READ -> READ" << std::endl;
           dataToSend[0] = readRegister(m_regPointer);
-          std::cout << "READ " << m_regPointer << " : " << int(dataToSend[0]) << std::endl;
+          BOOST_SPIRIT_DEBUG_OUT << "READ " << m_regPointer << " : " << int(dataToSend[0]) << std::endl;
         }
         break;
       }
@@ -120,17 +122,17 @@ void I2CClient::run()
       asio::write(l_socket, asio::buffer(dataToSend, 1), error);
       if (error)
       {
-        std::cout << error.message() << std::endl;
+        BOOST_SPIRIT_DEBUG_OUT << error.message() << std::endl;
       }
       else
       {
-        std::cout << "SEND " << int(dataToSend[0]) << std::endl;
+        BOOST_SPIRIT_DEBUG_OUT << "SEND " << int(dataToSend[0]) << std::endl;
       }
     }
   }
   catch (system::system_error &e)
   {
-    std::cout << "Error occured! Error code = "
+    BOOST_SPIRIT_DEBUG_OUT << "Error occured! Error code = "
               << e.code() << ". Message: "
               << e.what() << std::endl;
   }
