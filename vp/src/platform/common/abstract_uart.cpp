@@ -51,7 +51,7 @@ AbstractUART::AbstractUART(sc_core::sc_module_name, uint32_t irqsrc) {
 	    })
 	    .register_handler(this, &AbstractUART::register_access_callback);
 
-	stop = false;
+	stop = true;
 	if (pipe(stop_pipe) == -1)
 		throw std::system_error(errno, std::generic_category());
 
@@ -117,7 +117,6 @@ AbstractUART::~AbstractUART(void) {
 }
 
 void AbstractUART::start_threads(int fd) {
-//	stop_threads();
 
 	fds[0] = newpollfd(stop_fd);
 	fds[1] = newpollfd(fd);
@@ -145,24 +144,27 @@ void AbstractUART::rxpush(uint8_t data) {
 void AbstractUART::register_access_callback(const vp::map::register_access_t &r) {
 	if (r.read) {
 		if (r.vptr == &txdata) {
-			txmtx.lock();
-			txdata = (tx_fifo.size() >= UART_FIFO_DEPTH) ? UART_FULL : 0;
-			txmtx.unlock();
-		} else if (r.vptr == &rxdata) {
-			rcvmtx.lock();
-			if (rx_fifo.empty()) {
-				rxdata = 1 << 31;
-			} else {
-				rxdata = rx_fifo.front();
+			if (!stop) {
+				txmtx.lock();
+				txdata = (tx_fifo.size() >= UART_FIFO_DEPTH) ? UART_FULL : 0;
+				txmtx.unlock();
+			}
+		} else if (r.vptr == &rxdata ) {
+			if (!stop) {
+				rcvmtx.lock();
+				if (rx_fifo.empty()) {
+					rxdata = 1 << 31;
+				} else {
+					rxdata = rx_fifo.front();
 				rx_fifo.pop();
 #ifdef __APPLE__
-				spost(rxempty_p);
+					spost(rxempty_p);
 #else
-				spost(&rxempty);
+					spost(&rxempty);
 #endif
+				}
+				rcvmtx.unlock();
 			}
-
-			rcvmtx.unlock();
 		} else if (r.vptr == &txctrl) {
 			// std::cout << "TXctl";
 		} else if (r.vptr == &rxctrl) {
@@ -202,20 +204,22 @@ void AbstractUART::register_access_callback(const vp::map::register_access_t &r)
 	if (notify || (r.write && r.vptr == &ie))
 		asyncEvent.notify();
 
-	if (r.write && r.vptr == &txdata) {
-		txmtx.lock();
-		if (tx_fifo.size() >= UART_FIFO_DEPTH) {
-			txmtx.unlock();
-			return; /* write is ignored */
-		}
+	if (r.write && r.vptr == &txdata) { 
+		if (!stop) {// attention see the stop
+			txmtx.lock();
+			if (tx_fifo.size() >= UART_FIFO_DEPTH) {
+				txmtx.unlock();
+				return; /* write is ignored */
+			}
 
-		tx_fifo.push(txdata);
-		txmtx.unlock();
+			tx_fifo.push(txdata);
+			txmtx.unlock();
 #ifdef __APPLE__
-		spost(txfull_p);
+			spost(txfull_p);
 #else
-		spost(&txfull);
+			spost(&txfull);
 #endif
+		}
 	}
 }
 
