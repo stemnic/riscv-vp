@@ -83,10 +83,10 @@ void PreferencesDialog::accept()
     if (prefsFile.open(QIODevice::WriteOnly | QIODevice::Text))
     {
         QTextStream stream(&prefsFile);
-        stream << getDataPath() << Qt::endl;
-        stream << ui->gpioHost->text() << " " << ui->gpioPort->text() << Qt::endl;
-        stream << ui->uartHost->text() << " " << ui->uartPort->text() << Qt::endl;
-        stream << ui->i2cHost->text() << " " << ui->i2cPort->text() << Qt::endl;
+        stream << getDataPath() << "\n";
+        stream << ui->gpioHost->text() << " " << ui->gpioPort->text() << "\n";
+        stream << ui->uartHost->text() << " " << ui->uartPort->text() << "\n";
+        stream << ui->i2cHost->text() << " " << ui->i2cPort->text() << "\n";
         prefsFile.close();
     }
     QDialog::accept();
