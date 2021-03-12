@@ -1,11 +1,8 @@
 #include "can.h"
-#ifdef __APPLE__
-#define SIOCGIFINDEX _IOWR('i', 140, struct ifreq) 
-#define ifr_ifindex ifr_ifru.ifru_intval    /* interface index      */
-#else
+
+#include <linux/can.h>
 #include <linux/can/raw.h>
 #include <endian.h>
-#endif
 
 #include <unistd.h>
 
