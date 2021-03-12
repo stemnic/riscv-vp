@@ -51,7 +51,7 @@ AbstractUART::AbstractUART(sc_core::sc_module_name, uint32_t irqsrc) {
 	    })
 	    .register_handler(this, &AbstractUART::register_access_callback);
 
-	stop = false;
+	stop = true;
 	if (pipe(stop_pipe) == -1)
 		throw std::system_error(errno, std::generic_category());
 
@@ -77,14 +77,17 @@ AbstractUART::~AbstractUART(void) {
 		spost(txfull_p); // unblock transmit thread
 		txthr->join();
 		delete txthr;
+		txthr = NULL;
 	}
 
 	if (rcvthr) {
 		uint8_t byte = 0;
 		if (write(stop_pipe[1], &byte, sizeof(byte)) == -1) // unblock receive thread
-			err(EXIT_FAILURE, "couldn't unblock uart receive thread");
+		 	err(EXIT_FAILURE, "couldn't unblock uart receive thread");
+
 		rcvthr->join();
 		delete rcvthr;
+		rcvthr = NULL;
 	}
 
 	close(stop_pipe[0]);
@@ -97,11 +100,16 @@ AbstractUART::~AbstractUART(void) {
 }
 
 void AbstractUART::start_threads(int fd) {
+
 	fds[0] = newpollfd(stop_fd);
 	fds[1] = newpollfd(fd);
 
-	rcvthr = new std::thread(&AbstractUART::receive, this);
-	txthr = new std::thread(&AbstractUART::transmit, this);
+	if (!rcvthr)
+		rcvthr = new std::thread(&AbstractUART::receive, this);
+	if (!txthr)
+		txthr = new std::thread(&AbstractUART::transmit, this);
+
+	stop = false;
 }
 
 void AbstractUART::rxpush(uint8_t data) {
@@ -116,21 +124,23 @@ void AbstractUART::rxpush(uint8_t data) {
 void AbstractUART::register_access_callback(const vp::map::register_access_t &r) {
 	if (r.read) {
 		if (r.vptr == &txdata) {
-			txmtx.lock();
-			txdata = (tx_fifo.size() >= UART_FIFO_DEPTH) ? UART_FULL : 0;
-			txmtx.unlock();
-		} else if (r.vptr == &rxdata) {
-			rcvmtx.lock();
-			if (rx_fifo.empty()) {
-				rxdata = 1 << 31;
-			} else {
-				rxdata = rx_fifo.front();
-				rx_fifo.pop();
-
-				spost(rxempty_p);
+			if (!stop) {
+				txmtx.lock();
+				txdata = (tx_fifo.size() >= UART_FIFO_DEPTH) ? UART_FULL : 0;
+				txmtx.unlock();
 			}
-
-			rcvmtx.unlock();
+		} else if (r.vptr == &rxdata ) {
+			if (!stop) {
+				rcvmtx.lock();
+				if (rx_fifo.empty()) {
+					rxdata = 1 << 31;
+				} else {
+					rxdata = rx_fifo.front();
+				  rx_fifo.pop();
+				  spost(rxempty_p);
+				}
+				rcvmtx.unlock();
+			}
 		} else if (r.vptr == &txctrl) {
 			// std::cout << "TXctl";
 		} else if (r.vptr == &rxctrl) {
@@ -170,16 +180,18 @@ void AbstractUART::register_access_callback(const vp::map::register_access_t &r)
 	if (notify || (r.write && r.vptr == &ie))
 		asyncEvent.notify();
 
-	if (r.write && r.vptr == &txdata) {
-		txmtx.lock();
-		if (tx_fifo.size() >= UART_FIFO_DEPTH) {
-			txmtx.unlock();
-			return; /* write is ignored */
-		}
+	if (r.write && r.vptr == &txdata) { 
+		if (!stop) {// attention see the stop
+			txmtx.lock();
+			if (tx_fifo.size() >= UART_FIFO_DEPTH) {
+				txmtx.unlock();
+				return; /* write is ignored */
+			}
 
 		tx_fifo.push(txdata);
 		txmtx.unlock();
 		spost(txfull_p);
+		}
 	}
 }
 

@@ -23,6 +23,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+INCLUDEPATH += ../../../vp/src/platform/hifive/ \
+               ../../../vp/src/
 
 SOURCES += \
         main.cpp \
@@ -33,7 +35,10 @@ SOURCES += \
         ../../../vp/src/platform/hifive/oled/common.cpp \
 
 HEADERS += \
-        mainwindow.h
+        mainwindow.h \
+        ../../../vp/src/platform/hifive/gpio/gpiocommon.hpp \
+        ../../../vp/src/platform/hifive/gpio/gpio-client.hpp \
+        ../../../vp/src/util/elegantEnums.hpp
 
 FORMS += \
         mainwindow.ui
