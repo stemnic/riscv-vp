@@ -1,47 +1,9 @@
+#include <compat.h>
 #include "ethernet.h"
 
-#ifdef __APPLE__
-#include <net/ethernet.h>
-#include <arpa/inet.h>
-#include <net/if_dl.h>
-#include <net/bpf.h>
-
-/* Ioctl defines */
-#define TUNSETNOCSUM  _IOW('T', 200, int) 
-#define TUNSETDEBUG   _IOW('T', 201, int) 
-#define TUNSETIFF     _IOW('T', 202, int) 
-#define TUNSETPERSIST _IOW('T', 203, int) 
-#define TUNSETOWNER   _IOW('T', 204, int)
-#define TUNSETLINK    _IOW('T', 205, int)
-#define TUNSETGROUP   _IOW('T', 206, int)
-#define TUNGETFEATURES _IOR('T', 207, unsigned int)
-#define TUNSETOFFLOAD  _IOW('T', 208, unsigned int)
-#define TUNSETTXFILTER _IOW('T', 209, unsigned int)
-#define TUNGETIFF      _IOR('T', 210, unsigned int)
-#define TUNGETSNDBUF   _IOR('T', 211, int)
-#define TUNSETSNDBUF   _IOW('T', 212, int)
-
-/* TUNSETIFF ifr flags */
-#define IFF_TUN                0x0001
-#define IFF_TAP                0x0002
-#define IFF_NO_PI        0x1000
-#define IFF_ONE_QUEUE        0x2000
-#define IFF_VNET_HDR        0x4000
-#define IFF_TUN_EXCL        0x8000
-
-/* Ethernet */
-#define ETH_P_IP ETHERTYPE_IP
-#define ETH_P_ARP ETHERTYPE_ARP
-#define ETH_ALEN ETHER_ADDR_LEN
-
-/* for HW address */
-#define SIOCGIFHWADDR	0x8927		/* Get hardware address		*/
-
-#else 
 #include <netinet/ether.h>
 #include <linux/if_packet.h>
 #include <linux/if_tun.h>
-#endif
 
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -133,11 +95,7 @@ void dump_ethernet_frame(uint8_t *buf, size_t size, bool verbose = false) {
 						cout << "\t|-Checksum        : " << ntohs(udp->uh_sum) << endl;
 					}
 					readbuf += sizeof(udphdr);
-#ifdef __APPLE__
-					switch (ntohs(udp->uh_dport)) {
-#else
-						switch (ntohs(udp->dest)) {
-#endif
+						switch (ntohs(udp->uh_dport)) {
 						case 67:
 						case 68:
 							cout << "DHCP ";
@@ -267,29 +225,18 @@ void EthernetDevice::init_network(std::string clonedev) {
 	}
 
 	/* Get the MAC address of the interface to send on */
-#ifdef __APPLE__
 	struct ifaddrs *ifad, *ifadptr;
 	
 	if (getifaddrs(&ifad) == 0) {
 		for (ifadptr = ifad; ifadptr != NULL; ifadptr = (ifadptr)->ifa_next) {
-			if (!strcmp((ifadptr)->ifa_name, IF_NAME) && (((ifadptr)->ifa_addr)->sa_family == AF_LINK)) {
-				memcpy(VIRTUAL_MAC_ADDRESS, LLADDR((struct sockaddr_dl *)(ifadptr)->ifa_addr), 6);
+			if (!strcmp((ifadptr)->ifa_name, IF_NAME) && (((ifadptr)->ifa_addr)->sa_family == AF_PACKET)) {
+				struct sockaddr_ll *saddl = (struct sockaddr_ll *)(ifadptr)->ifa_addr;
+				memcpy(VIRTUAL_MAC_ADDRESS, (caddr_t)((saddl)->sll_addr), 6);
 				break;
 			}
 		}
 		freeifaddrs(ifad);
 	}
-#else
-	struct ifreq ifopts;
-	memset(&ifopts, 0, sizeof(struct ifreq));
-	strncpy(ifopts.ifr_name, IF_NAME, IFNAMSIZ - 1);
-	if (ioctl(sockfd, SIOCGIFHWADDR, &ifopts) < 0) {
-		perror("SIOCGIFHWADDR");
-		assert(sockfd >= 0);
-	}
-	// Save own MAC in register
-	memcpy(VIRTUAL_MAC_ADDRESS, ifopts.ifr_hwaddr.sa_data, 6);
-#endif
 	fcntl(sockfd, F_SETFL, O_NONBLOCK);
 }
 
