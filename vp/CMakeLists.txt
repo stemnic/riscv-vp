@@ -35,7 +35,7 @@ if(APPLE)
 include_directories( "${CMAKE_SOURCE_DIR}/../compat/macos")
 endif()
 
-if(LINUX)
+if(UNIX)
 include_directories( "${CMAKE_SOURCE_DIR}/../compat/linux")
 endif()
 
