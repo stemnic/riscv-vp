@@ -6,13 +6,11 @@ UartThread::UartThread(QObject *parent)
     : QThread(parent)
     , m_socket(nullptr)
     , m_connected(true)
-    , m_alive(true)
 {
 }
 
 UartThread::~UartThread()
 {
-    m_alive = false;
     stop();
     quit();
     wait();
@@ -25,12 +23,9 @@ void UartThread::stop()
 
 void UartThread::run()
 {
-    while (m_alive)
+    if (m_connected)
     {
-        if (m_connected)
-        {
-            processUart();
-        }
+        processUart();
     }
 }
 

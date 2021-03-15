@@ -22,6 +22,7 @@ public:
     //! start thread, connects to server
     void run() override;
 
+
 public slots:
     //! sends \p f_string over the uart connection
     void sendInput(QString f_string)

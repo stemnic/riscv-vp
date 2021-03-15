@@ -14,6 +14,8 @@ INCLUDEPATH += ../../../vp/src/platform/redv/ \
 
 SOURCES += \
     gpioutils.cpp \
+    i2cdevicedialog.cpp \
+    i2cthread.cpp \
     main.cpp \
     mainwindow.cpp \
     preferencesdialog.cpp \
@@ -26,8 +28,12 @@ SOURCES += \
 HEADERS += \
     button.h \
     gpioutils.h \
+    i2c.h \
+    i2cdevicedialog.h \
+    i2cthread.h \
     led.h \
     mainwindow.h \
+    oled.h \
     preferencesdialog.h \
     sevensegment.h \
     uartthread.h \
@@ -36,6 +42,7 @@ HEADERS += \
     ../../../vp/src/util/elegantEnums.hpp
 
 FORMS += \
+    i2cdevicedialog.ui \
     mainwindow.ui \
     preferencesdialog.ui
 

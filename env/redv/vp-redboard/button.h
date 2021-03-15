@@ -9,6 +9,8 @@
 
 using namespace gpioutil;
 
+#include <iostream>
+
 class Button : public QGraphicsItem
 {
 public:
@@ -21,6 +23,7 @@ public:
     {
         setPos(m_rect.x(), m_rect.y());
         m_color = QColor(0, 0, 255, 0xC0);
+        setFlag(QGraphicsItem::ItemSendsGeometryChanges);
     }
 
     QRectF boundingRect() const override
@@ -38,27 +41,33 @@ public:
 
     void mousePressEvent(QGraphicsSceneMouseEvent* f_event) override
     {
+        if (!(*m_gpio))
+            return;
         if (f_event->button() == Qt::LeftButton)
         {
             (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), 0);  // Active low
             m_pressed = true;
         }
+        QGraphicsItem::mousePressEvent(f_event);
     }
 
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* f_event) override
     {
+        if (!(*m_gpio))
+            return;
         if (f_event->button() == Qt::LeftButton)
         {
             (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), 1);  // Active low
             m_pressed = false;
         }
+        QGraphicsItem::mouseReleaseEvent(f_event);
     }
 
     void advance(int step) override
     {
         if (! step)
             return;
-        if (!m_gpio)
+        if (!(*m_gpio))
             return;
 
         if (m_pressed)
@@ -82,6 +91,18 @@ public:
     {
         return m_rect.size();
     }
+
+    QVariant itemChange(GraphicsItemChange change, const QVariant &value) override
+    {
+        if (change == ItemPositionChange && scene())
+        {
+            qDebug() << value.toPointF();
+        }
+        return QGraphicsItem::itemChange(change, value);
+    }
+
+
+
 
 private:
     QRect m_rect;
