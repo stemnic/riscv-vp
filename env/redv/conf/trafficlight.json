@@ -1,0 +1,67 @@
+{
+    "background": "/Users/matthias/embedded/riscv-vp/env/redv/img/trafficlight",
+    "buttons": [
+        {
+            "dim": [
+                25,
+                25
+            ],
+            "pin": 2,
+            "pos": [
+                599,
+                171
+            ]
+        }
+    ],
+    "leds": [
+        {
+            "color": 2,
+            "linewidth": 15,
+            "offs": [
+                458,
+                82
+            ],
+            "pin": 4
+        },
+        {
+            "color": 1,
+            "linewidth": 15,
+            "offs": [
+                367,
+                90
+            ],
+            "pin": 3
+        },
+        {
+            "color": 2,
+            "linewidth": 15,
+            "offs": [
+                424,
+                240
+            ],
+            "pin": 11
+        },
+        {
+            "color": 3,
+            "linewidth": 15,
+            "offs": [
+                330,
+                273
+            ],
+            "pin": 12
+        },
+        {
+            "color": 1,
+            "linewidth": 15,
+            "offs": [
+                231,
+                256
+            ],
+            "pin": 13
+        }
+    ],
+    "windowsize": [
+        800,
+        600
+    ]
+}
