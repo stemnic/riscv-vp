@@ -82,6 +82,36 @@ void MainWindow::openPreferencesDialog()
     m_preferencesDialog->show();
 }
 
+
+void MainWindow::newBoard()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Load Image File"), m_preferencesDialog->getDataPath(), tr("PNG (*.png);;All Files (*)"));
+    if (fileName.isEmpty())
+    {
+        return;
+    }
+    else
+    {
+        // delete current scene
+        m_graphicsScene->clear();
+
+        m_backgroundFileName = fileName;
+        QPixmap backgroundPixmap(fileName);
+
+        // ToDo: Ask for size
+        QSize size(800, 600);
+        backgroundPixmap = backgroundPixmap.scaled(size, Qt::IgnoreAspectRatio);
+
+        m_graphicsScene->setSceneRect(0, 0, size.width(), size.height());
+
+        ui->graphicsView->setFixedSize(backgroundPixmap.size());
+        ui->graphicsView->setBackgroundBrush(backgroundPixmap);
+        ui->graphicsView->setCacheMode(QGraphicsView::CacheBackground);
+        ui->graphicsView->setScene(m_graphicsScene);
+    }
+}
+
+
 void MainWindow::openBoard()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Load Board Config"), m_preferencesDialog->getDataPath(), tr("JSON (*.json);;All Files (*)"));
@@ -141,9 +171,28 @@ void MainWindow::loadBoardConfig(const QString& f_fileName)
         LED* rgbLed = new LED(
             QPoint(obj["offs"].toArray().at(0).toInt(89),
                    obj["offs"].toArray().at(1).toInt(161)),
+                19,
                 &m_gpio);
         // graphics scene should take care now of item and delete it...
         m_graphicsScene->addItem(rgbLed);
+    }
+
+    if(config.contains("leds"))
+    {
+        QJsonArray leds = config["leds"].toArray();
+        for(qint32 i = 0; i < leds.size(); i++)
+        {
+            QJsonObject ledJO = leds[i].toObject();
+            LED* led = new LED(
+                QPoint(ledJO["offs"].toArray().at(0).toInt(100),
+                       ledJO["offs"].toArray().at(1).toInt(100)),
+                       ledJO["pin"].toInt(13),
+                    &m_gpio);
+                quint8 colorMask = ledJO["color"].toInt(1);
+            led->setColorMask(colorMask);
+            // graphics scene should take care now of item and delete it...
+            m_graphicsScene->addItem(led);
+        }
     }
 
     if(config.contains("sevensegment"))
@@ -249,7 +298,7 @@ void MainWindow::saveBoard()
     QJsonObject root;
     root["background"] = m_backgroundFileName;
 
-    QJsonArray buttons;
+    QJsonArray buttons, leds;
 
     // run mode
     foreach (QGraphicsItem* item, m_graphicsScene->items())
@@ -262,7 +311,9 @@ void MainWindow::saveBoard()
             pos.push_back(item->pos().x());
             pos.push_back(item->pos().y());
             led["offs"] = pos;
-            root["rgb"] = led;
+            led["color"] = dynamic_cast<LED*>(item)->getColorMask();
+            led["pin"] =  dynamic_cast<LED*>(item)->getPin();
+            leds.push_back(led);
         }
         else if (dynamic_cast<Sevensegment*>(item))
         {
@@ -333,6 +384,10 @@ void MainWindow::saveBoard()
     if (buttons.size() > 0)
     {
         root["buttons"] = buttons;
+    }
+    if (leds.size() > 0)
+    {
+        root["leds"] = leds;
     }
 
     QJsonArray winsize;

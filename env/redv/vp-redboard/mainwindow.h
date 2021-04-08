@@ -28,6 +28,7 @@ public:
     void loadBoardConfig(const QString& f_fileName);
 
 public slots:
+    void newBoard();
     void openBoard();
     void saveBoard();
 

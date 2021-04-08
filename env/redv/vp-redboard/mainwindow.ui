@@ -68,9 +68,10 @@
     <addaction name="separator"/>
     <addaction name="actionPreferences"/>
     <addaction name="separator"/>
-    <addaction name="actionQuit"/>
     <addaction name="actionAbout"/>
     <addaction name="actionAboutQt"/>
+    <addaction name="separator"/>
+    <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuConnections">
     <property name="title">
@@ -168,7 +169,7 @@
   </action>
   <action name="actionNew">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
     <string>&amp;New</string>
@@ -336,6 +337,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionNew</sender>
+   <signal>triggered()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>newBoard()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>393</x>
+     <y>299</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>openPreferencesDialog()</slot>
@@ -348,5 +365,6 @@
   <slot>disconnect()</slot>
   <slot>about()</slot>
   <slot>aboutQt()</slot>
+  <slot>newBoard()</slot>
  </slots>
 </ui>

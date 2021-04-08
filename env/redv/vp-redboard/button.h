@@ -33,53 +33,61 @@ public:
 
     void paint(QPainter *f_painter, const QStyleOptionGraphicsItem *f_option, QWidget *f_widget) override
     {
-        if (!(*m_gpio))
-            return;
         f_painter->setBrush(m_color);
         f_painter->drawRect(0, 0, m_rect.width(), m_rect.height());
     }
 
     void mousePressEvent(QGraphicsSceneMouseEvent* f_event) override
     {
-        if (!(*m_gpio))
-            return;
-        if (f_event->button() == Qt::LeftButton)
+        if (flags() & ItemIsMovable)
         {
-            (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), 0);  // Active low
-            m_pressed = true;
+            QGraphicsItem::mousePressEvent(f_event);
         }
-        QGraphicsItem::mousePressEvent(f_event);
+        else
+        {
+            if (*m_gpio)
+            {
+                if (f_event->button() == Qt::LeftButton)
+                {
+                    (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), 1);
+                    m_pressed = true;
+                    update();
+                }
+            }
+        }
     }
 
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* f_event) override
     {
-        if (!(*m_gpio))
-            return;
-        if (f_event->button() == Qt::LeftButton)
+        if (flags() & ItemIsMovable)
         {
-            (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), 1);  // Active low
-            m_pressed = false;
+            QGraphicsItem::mouseReleaseEvent(f_event);
         }
-        QGraphicsItem::mouseReleaseEvent(f_event);
+        else
+        {
+            if (*m_gpio)
+            {
+                if (f_event->button() == Qt::LeftButton)
+                {
+                    (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), 0);
+                    m_pressed = false;
+                    update();
+                }
+            }
+        }
     }
 
     void advance(int step) override
     {
         if (! step)
             return;
-        if (!(*m_gpio))
-            return;
 
-        if (m_pressed)
+        if ((*m_gpio))
         {
-            (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), 0);  // Active low
+            (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), m_pressed);  // Active low
+            (*m_gpio)->update();
         }
-
-
-        if ((*m_gpio)->update())
-        {
-           update();
-        }
+        update();
     }
 
     qint8 getPin() const
