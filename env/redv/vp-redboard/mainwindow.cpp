@@ -589,7 +589,7 @@ void MainWindow::inputUart()
 void MainWindow::about()
 {
     QMessageBox::about(this, "About vp-redboard",
-                       "Version 03/2021 <br>"
+                       "Version 04/2021 <br>"
                        "<br>"
                        "THE SOFTWARE IS PROVIDED «AS IS», WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. <br><br>"
                        "See LICENSE file for further information.");

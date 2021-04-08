@@ -49,7 +49,7 @@ public:
             {
                 if (f_event->button() == Qt::LeftButton)
                 {
-                    (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), 1);
+                    (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), 0);
                     m_pressed = true;
                     update();
                 }
@@ -69,7 +69,7 @@ public:
             {
                 if (f_event->button() == Qt::LeftButton)
                 {
-                    (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), 0);
+                    (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), 1);
                     m_pressed = false;
                     update();
                 }
@@ -84,7 +84,7 @@ public:
 
         if ((*m_gpio))
         {
-            (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), m_pressed);  // Active low
+            (*m_gpio)->setBit(translatePinToGpioOffs(m_pin), !m_pressed);  // Active low
             (*m_gpio)->update();
         }
         update();
