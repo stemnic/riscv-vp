@@ -1,5 +1,5 @@
 {
-    "background": "/Users/matthias/embedded/riscv-vp/env/redv/img/trafficlight",
+    "background": "img/trafficlight",
     "buttons": [
         {
             "dim": [
