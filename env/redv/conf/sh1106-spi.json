@@ -1,0 +1,15 @@
+{
+    "background": "img/sh1106-spi.png",
+    "oled": {
+        "margin": 10,
+        "offs": [
+            394,
+            74
+        ],
+        "scale": 1
+    },
+    "windowsize": [
+        800,
+        600
+    ]
+}

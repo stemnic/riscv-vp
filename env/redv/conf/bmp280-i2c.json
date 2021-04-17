@@ -1,5 +1,5 @@
 {
-    "background": "img/i2cbmp280.png",
+    "background": "img/bmp280-i2c.png",
     "i2c": {
         "dim": [
             60,
