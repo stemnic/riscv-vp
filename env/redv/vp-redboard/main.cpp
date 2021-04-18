@@ -10,6 +10,8 @@ int main(int argc, char *argv[])
 
     if (argc > 1)
     {
+        // gpio client thing... no sigpipes
+        signal(SIGPIPE, SIG_IGN);
         w.loadBoardConfig(argv[1]);
     }
 

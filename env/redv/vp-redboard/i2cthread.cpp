@@ -30,6 +30,7 @@ I2CThread::I2CThread(QObject *parent)
 
 I2CThread::~I2CThread()
 {
+    stop();
     quit();
     wait();
 }
@@ -37,6 +38,7 @@ I2CThread::~I2CThread()
 void I2CThread::stop()
 {
     m_connected = false;
+    m_waitForResponse = false;
 }
 
 void I2CThread::run()
@@ -86,7 +88,6 @@ void I2CThread::run()
         }
         DEBUGOUT << "SEND " << int(dataToSend[0]) << std::endl;
 
-        msleep(100);
     } while (m_socket->isOpen() && m_connected);
     if (m_socket)
     {
@@ -182,14 +183,14 @@ quint8 I2CThread::processTransmission(quint8 f_dataReceived[2])
         {
             m_state = READ;
             DEBUGOUT << "READ -> READ" << std::endl;
-            emit i2cReadReq(m_i2cId, m_regPointer);
 
-            //                m_waitForResponse = true;
-            //                while (m_waitForResponse);
+            m_waitForResponse = true;
+            emit i2cReadReq(m_i2cId, m_regPointer);
+            while (m_waitForResponse);
 
             dataToSend[0] = m_dataFromSlot;
-            ++m_regPointer;
             DEBUGOUT << "READ " << m_regPointer << " : " << int(dataToSend[0]) << std::endl;
+            ++m_regPointer;
         }
         break;
     }

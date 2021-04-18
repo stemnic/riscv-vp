@@ -46,14 +46,11 @@ void UartThread::processUart()
     }
 
     do {
-        if (!m_socket->waitForReadyRead())
+        if (m_socket->waitForReadyRead())
         {
-            return;
+            QString inString =  m_socket->readAll();
+            emit dataRead(inString);
         }
-
-        QString inString = m_socket->readLine();
-        emit dataRead(inString);
-
 
         if (m_sendData.size() > 0)
         {
@@ -67,7 +64,6 @@ void UartThread::processUart()
             }
         }
 
-        msleep(SOCKET_DELAY);
     } while (m_socket->isOpen() && m_connected);
     if (m_socket)
     {
