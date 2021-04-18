@@ -1,0 +1,23 @@
+{
+    "background": "img/adxl345-i2c.png",
+    "i2c": {
+        "dim": [
+            70,
+            60
+        ],
+        "id": 29,
+        "name": "ADXL345",
+        "pos": [
+            162,
+            125
+        ],
+        "reg": [
+            0,
+            229
+        ]
+    },
+    "windowsize": [
+        640,
+        480
+    ]
+}
