@@ -63,7 +63,7 @@ private:
     // data received by slot (not socket)
     char m_dataFromSlot;
     // flag before writing data by socket
-    bool m_waitForResponse;
+    volatile bool m_waitForResponse;
 
     //! server data
     QString m_host;
