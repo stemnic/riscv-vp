@@ -19,7 +19,12 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-find_package( Boost REQUIRED COMPONENTS iostreams program_options log)
+#find_package( Boost REQUIRED COMPONENTS iostreams program_options log)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS iostreams program_options log)
+IF (Boost_FOUND)
+    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
+    ADD_DEFINITIONS( "-DHAS_BOOST" )
+ENDIF()
 
 if(NOT USE_SYSTEM_SYSTEMC)
 	find_package( SystemC REQUIRED)

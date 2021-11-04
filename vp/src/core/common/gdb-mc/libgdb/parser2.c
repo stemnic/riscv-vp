@@ -5,7 +5,7 @@
 #include <libgdb/parser1.h>
 #include <libgdb/parser2.h>
 
-#include "mpc.h"
+#include "mpc/mpc.h"
 #include "parser2.h"
 #include "internal.h"
 

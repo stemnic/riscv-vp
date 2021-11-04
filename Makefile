@@ -1,4 +1,4 @@
-NPROCS:=$(shell grep -c ^processor /proc/cpuinfo)
+NPROCS:=$(shell sysctl -n hw.ncpu)
 
 vps: vp/src/core/common/gdb-mc/libgdb/mpc/mpc.c vp/dependencies/systemc-dist vp/dependencies/softfloat-dist vp/build/Makefile
 	make install -C vp/build -j$(NPROCS)

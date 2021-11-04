@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-NPROCS=$(grep -c ^processor /proc/cpuinfo)
+NPROCS=$(sysctl -n hw.ncpu)
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PREFIX=$DIR/systemc-dist
@@ -15,8 +15,9 @@ fi
 tar xzf $source
 cd systemc-$version
 mkdir build && cd build
-../configure CXXFLAGS='-std=c++14' --prefix=$PREFIX --with-arch-suffix=
+#../configure CXXFLAGS='-std=c++14' --prefix=$PREFIX --with-arch-suffix=
+cmake .. -DENABLE_PTHREADS=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_STANDARD=14
 make -j$NPROCS
-make install
+sudo make install
 
 cd $DIR
