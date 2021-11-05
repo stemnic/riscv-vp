@@ -10,3 +10,5 @@ sim: main
 	tiny32-vp --intercept-syscalls $<
 
 .PHONY: all sim
+clean:
+	rm -f main main.o irq.o bootstrap.o

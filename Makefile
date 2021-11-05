@@ -24,14 +24,14 @@ vp-eclipse:
 
 env/basic/vp-display/build/Makefile:
 	mkdir env/basic/vp-display/build || true
-	cd env/basic/vp-display/build && cmake ..
+	cd env/basic/vp-display/build && cmake .. -DCMAKE_PREFIX_PATH=/opt/homebrew/Cellar/qt@5/5.15.2/
 
 vp-display: env/basic/vp-display/build/Makefile
 	make -C  env/basic/vp-display/build -j$(NPROCS)
 
 env/hifive/vp-breadboard/build/Makefile:
 	mkdir env/hifive/vp-breadboard/build || true
-	cd env/hifive/vp-breadboard/build && cmake ..
+	cd env/hifive/vp-breadboard/build && cmake .. -DCMAKE_PREFIX_PATH=/opt/homebrew/Cellar/qt@5/5.15.2/
 
 vp-breadboard: env/hifive/vp-breadboard/build/Makefile
 	make -C  env/hifive/vp-breadboard/build -j$(NPROCS)

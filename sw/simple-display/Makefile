@@ -11,7 +11,7 @@ dump-code: all
 	riscv32-unknown-elf-objdump -D main
 
 removeSHMEM:
-	ipcrm --shmem-key 0x0000053a || true
+	ipcrm -M 0x0000053a || true
 
 clean: removeSHMEM
 	rm -f main
