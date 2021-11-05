@@ -1,7 +1,7 @@
 #pragma once
 
 #include <boost/iostreams/device/mapped_file.hpp>
-
+#include <exception>
 #include <cstdint>
 #include <vector>
 
@@ -19,6 +19,12 @@ struct GenericElfLoader {
 	const char *filename;
 	boost::iostreams::mapped_file_source elf;
 	const Elf_Ehdr *hdr;
+
+	struct load_executable_exception : public std::exception {
+		const char * what () const throw () {
+			return "Tried loading invalid elf layout";
+		}
+	};
 
 	GenericElfLoader(const char *filename) : filename(filename), elf(filename) {
 		assert(elf.is_open() && "file not open");
@@ -43,13 +49,28 @@ struct GenericElfLoader {
 				continue;
 
 			//If p_memsz is greater than p_filesz, the extra bytes are NOBITS.
-			if (p->p_memsz > p->p_filesz)
-				continue;
+			// -> still, the memory needs to be zero initialized in this case!
+//			if (p->p_memsz > p->p_filesz)
+//				continue;
 
 			sections.push_back(p);
 		}
 
 		return sections;
+	}
+
+	std::ostream& print_phdr(std::ostream& os, const Elf_Phdr& h, unsigned tabs = 0)
+	{
+		std::string tab(tabs, '\t');
+		os << tab << "p_type "  << h.p_type   << std::endl;
+		os << tab << "p_offset "<< h.p_offset << std::endl;
+		os << tab << "p_vaddr " << h.p_vaddr  << std::endl;
+		os << tab << "p_paddr " << h.p_paddr  << std::endl;
+		os << tab << "p_filesz "<< h.p_filesz << std::endl;
+		os << tab << "p_memsz " << h.p_memsz  << std::endl;
+		os << tab << "p_flags " << h.p_flags  << std::endl;
+		os << tab << "p_align " << h.p_align  << std::endl;
+	    return os;
 	}
 
 	void load_executable_image(load_if &load_if, addr_t size, addr_t offset, bool use_vaddr = true) {
@@ -58,11 +79,30 @@ struct GenericElfLoader {
 			if (use_vaddr)
 				addr = p->p_vaddr;
 
-			assert ((addr >= offset) &&
-					"Offset overlaps into section");
+			// If the modeled virtual platform separates Flash and DRAM
+			// (like the hifive-vp does) we call load_executable_image
+			// once for each memory segment (i.e. once for the Flash and
+			// once for the DRAM). As such, we must skip all ELF regions
+			// which are not covered by the passed memory segment.
+			if (!(addr >= offset && addr < (offset + size)))
+				continue;
 
-			assert ((addr + p->p_memsz < offset + size) &&
-					"Section does not fit in target memory");
+			if (addr < offset) {
+				std::cerr << "[elf_loader] ";
+				std::cerr << "Offset overlaps into section:" << std::endl;
+				std::cerr << "\t0x" << std::hex << +addr << " < " << +offset << std::endl;
+				print_phdr(std::cerr, *p, 2);
+				throw load_executable_exception();
+			}
+
+			if (addr + p->p_memsz >= offset + size) {
+				std::cerr << "[elf_loader] ";
+				std::cerr << "Section does not fit in target memory" << std::endl;
+				std::cerr << "\t0x" << std::hex << +addr << " + size 0x" << +p->p_memsz;
+				std::cerr << " would overflow offset 0x" << +offset << " + size 0x" << +size << std::endl;
+				print_phdr(std::cerr, *p, 2);
+				throw load_executable_exception();
+			}
 
 			auto idx = addr - offset;
 			const char *src = elf.data() + p->p_offset;

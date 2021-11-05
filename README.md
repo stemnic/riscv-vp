@@ -31,7 +31,7 @@ sudo apt-get install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev
 ```
 On Ubuntu 20, install these:
 ```bash
-sudo apt-get install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo libgoogle-perftools-dev libtool patchutils bc zlib1g-dev libexpat-dev libboost-iostreams-dev libboost-program-options-dev libboost-log-dev
+sudo apt-get install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo libgoogle-perftools-dev libtool patchutils bc zlib1g-dev libexpat-dev libboost-iostreams-dev libboost-program-options-dev libboost-log-dev qt5-default
 ```
 
 On Fedora, following actions are required:
@@ -45,44 +45,45 @@ sudo dnf debuginfo-install boost-iostreams boost-program-options boost-regex bzi
 For more information on prerequisites for the RISC-V GNU toolchain visit https://github.com/riscv/riscv-gnu-toolchain. With the packages installed, the toolchain can be build as follows:
 
 ```bash
+# in some source folder
 git clone https://github.com/riscv/riscv-gnu-toolchain.git
 cd riscv-gnu-toolchain
-git submodule update --init --recursive
-
+git submodule update --init --recursive # this may take a while
 ./configure --prefix=$(pwd)/../riscv-gnu-toolchain-dist-rv32imac-ilp32 --with-arch=rv32imac --with-abi=ilp32
-
-make
+make -j$(nproc)
 ```
 
 For additional configurations and options for the RISC-V GNU toolchain visit https://github.com/riscv/riscv-gnu-toolchain.
 
+If wanted, move the `riscv-gnu-toolchain-dist-rv32imac-ilp32` folder to your `/opt/` folder and add it to your path in your `~/.bashrc`
+(e.g. `PATH=$PATH:/opt/riscv-gnu-toolchain-dist-rv32imac-ilp32/bin`)
 
 #### 2) Build this RISC-V Virtual Prototype:
 
-i) Checkout required git submodules:
+In the root folder, type `make`. This script does the following for you:
 
-```bash
-git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
-```
-
-ii) in *vp/dependencies* folder (will download and compile SystemC, and build a local version of the softfloat library):
-
-```bash
-./build_systemc_233.sh
-./build_softfloat.sh
-```
-
-
-iii) in *vp* folder (requires the *boost* C++ library):
- 
-```bash
-mkdir build
-cd build
-cmake ..
-make install
-```
-
-The *install* argument is optional, it will copy all VP executables to the local *vp/build/bin* folder.
+> i) Checkout required git submodules:
+>
+>```bash
+>git submodule update --init vp/src/core/common/gdb-mc/libgdb/mpc
+>```
+>
+>ii) in *vp/dependencies* folder (will download and compile SystemC, and build a local version of the softfloat library):
+>
+>```bash
+>./build_systemc_233.sh
+>./build_softfloat.sh
+>```
+>
+>
+>iii) in *vp* folder (requires the *boost* C++ library):
+> 
+>```bash
+>mkdir build
+>cd build
+>cmake ..
+>make install
+>```
 
 #### 3) Compile and run some Software:
 
@@ -123,4 +124,4 @@ literal Ctrl-a control character to the guest.
 
 #### Acknowledgements:
 
-This work was supported in part by the German Federal Ministry of Education and Research (BMBF) within the project CONFIRM under contract no. 16ES0565 and within the project SATiSFy under contract no. 16KIS0821K and within the project VerSys under contract no. 01IW19001, and by the University of Bremen’s graduate school SyDe, funded by the German Excellence Initiative.
+This work was supported in part by the German Federal Ministry of Education and Research (BMBF) within the project CONFIRM under contract no. 16ES0565 and within the project SATiSFy under contract no. 16KIS0821K and within the project VerSys under contract no. 01IW19001 and within the project Scale4Edge under contract no. 16ME0127, and by the University of Bremen’s graduate school SyDe, funded by the German Excellence Initiative.
