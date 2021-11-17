@@ -169,6 +169,8 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	int64_t lr_sc_counter = 0;
 	uint64_t total_num_instr = 0;
 
+	uint64_t num_instruction_messured = 0;
+
 	// last decoded and executed instruction and opcode
 	Instruction instr;
 	Opcode::Mapping op;

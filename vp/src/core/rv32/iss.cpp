@@ -168,6 +168,9 @@ void ISS::exec_step() {
 		puts("");
 	}
 
+	// Increment instruciton counter 
+	this->num_instruction_messured++;
+
 	switch (op) {
 		case Opcode::UNDEF:
 			if (trace)
@@ -367,6 +370,9 @@ void ISS::exec_step() {
 		} break;
 
 		case Opcode::ECALL: {
+			auto syscall = this->read_register(this->get_syscall_register_index());
+			printf("[ECALL] Syscall: %lli\n", syscall);
+			this->num_instruction_messured = 0;
 			if (sys) {
 				sys->execute_syscall(this);
 			} else {
@@ -1113,6 +1119,7 @@ void ISS::exec_step() {
 
         case Opcode::MRET:
             return_from_trap_handler(MachineMode);
+			printf("[MRET] Instr since ECALL: %lli\n", this->num_instruction_messured);
             break;
 
             // instructions accepted by decoder but not by this RV32IMACF ISS -> do normal trap
