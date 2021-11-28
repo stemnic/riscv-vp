@@ -121,12 +121,16 @@ void ISS::benchmark_tick(int pc_increment){
 	{
 		if (key + pc_increment == (int)this->pc)
 		{
+			std::cout << "------[Syscall Benchmark]--------" << std::endl;
 			std::cout << "[PC]: " << key << "\n" << 
-			"[Number of instruction until return]: " << val.num_of_instructions << "\n" << 
-			"[Syscall]: " << val.sys_call << "\n" << 
-			"\n";
+			"[Number of instructions until return]: " << val.num_of_instructions << "\n" << 
+			"[Syscall]: " << val.sys_call << "\n" <<
+						 "---------------------------------" << std::endl << std::endl;
 			key_to_be_deleted = key;
-			this->trace = false;
+			if (this->benchmark_map.size() == 1)
+			{
+				this->trace = false;
+			}
 		}else{
 			this->benchmark_map[key].num_of_instructions++;
 		}
