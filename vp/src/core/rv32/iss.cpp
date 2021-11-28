@@ -115,6 +115,29 @@ ISS::ISS(uint32_t hart_id, bool use_E_base_isa) : systemc_name("Core-" + std::to
 	op = Opcode::UNDEF;
 }
 
+void ISS::benchmark_tick(int pc_increment){
+	int key_to_be_deleted = 0;
+	for (auto const& [key, val] : this->benchmark_map)
+	{
+		if (key + pc_increment == (int)this->pc)
+		{
+			std::cout << "[PC]: " << key << "\n" << 
+			"[Number of instruction until return]: " << val.num_of_instructions << "\n" << 
+			"[Syscall]: " << val.sys_call << "\n" << 
+			"\n";
+			key_to_be_deleted = key;
+			this->trace = false;
+		}else{
+			this->benchmark_map[key].num_of_instructions++;
+		}
+	}
+	this->benchmark_map.erase(key_to_be_deleted);
+}
+void ISS::benchmark_start(int pc, int syscall){
+	this->benchmark_map[pc] = benchmark{0, syscall};
+	this->trace = true;
+}
+
 void ISS::exec_step() {
 	assert(((pc & ~pc_alignment_mask()) == 0) && "misaligned instruction");
 
@@ -130,11 +153,15 @@ void ISS::exec_step() {
 	if (instr.is_compressed()) {
 		op = instr.decode_and_expand_compressed(RV32);
 		pc += 2;
+		// run bencmarktick
+		this->benchmark_tick(2);
         if (op != Opcode::UNDEF)
             REQUIRE_ISA(C_ISA_EXT);
     } else {
 		op = instr.decode_normal(RV32);
 		pc += 4;
+		// run bencmarktick
+		this->benchmark_tick(4);
 	}
 
 	if (trace) {
@@ -167,9 +194,6 @@ void ISS::exec_step() {
 		}
 		puts("");
 	}
-
-	// Increment instruciton counter 
-	this->num_instruction_messured++;
 
 	switch (op) {
 		case Opcode::UNDEF:
@@ -371,8 +395,7 @@ void ISS::exec_step() {
 
 		case Opcode::ECALL: {
 			auto syscall = this->read_register(this->get_syscall_register_index());
-			printf("[ECALL] Syscall: %lli\n", syscall);
-			this->num_instruction_messured = 0;
+			this->benchmark_start(this->pc, syscall);
 			if (sys) {
 				sys->execute_syscall(this);
 			} else {
@@ -1119,7 +1142,6 @@ void ISS::exec_step() {
 
         case Opcode::MRET:
             return_from_trap_handler(MachineMode);
-			printf("[MRET] Instr since ECALL: %lli\n", this->num_instruction_messured);
             break;
 
             // instructions accepted by decoder but not by this RV32IMACF ISS -> do normal trap

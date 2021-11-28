@@ -152,6 +152,8 @@ struct PendingInterrupts {
 	uint32_t pending;
 };
 
+struct benchmark { int num_of_instructions; int sys_call; };
+
 struct ISS : public external_interrupt_target, public clint_interrupt_target, public iss_syscall_if, public debug_target_if {
 	clint_if *clint = nullptr;
 	instr_memory_if *instr_mem = nullptr;
@@ -324,6 +326,12 @@ struct ISS : public external_interrupt_target, public clint_interrupt_target, pu
 	void run() override;
 
 	void show();
+
+	private:
+	void benchmark_tick(int pc_increment);
+	void benchmark_start(int pc, int syscall);
+	std::map<int, benchmark> benchmark_map;
+
 };
 
 /* Do not call the run function of the ISS directly but use one of the Runner
