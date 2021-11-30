@@ -97,10 +97,14 @@ void drawFunnyBar(bool horizontal = false) {
 using namespace std;
 
 int main() {
+putchar('a');
 	cout << "draw background" << endl;
+putchar('b');
 	drawBackground();
+putchar('c');
 	while (true) {
 		cout << "Draw H-bar" << endl;
+putchar('d');
 		drawFunnyBar(true);
 		display::fillFrame(Framebuffer::Type::foreground);
 		display::applyFrame();

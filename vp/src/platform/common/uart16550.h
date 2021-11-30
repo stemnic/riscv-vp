@@ -47,6 +47,7 @@ struct UART16550 : public sc_core::sc_module {
 	}
 
 	void try_receive_char() {
+	fprintf(stderr, "in try_receive_char\n");
 		if (rx_fifo.empty()) {
 			char c;
 			if (read(0, &c, 1) >= 0) {
@@ -56,6 +57,7 @@ struct UART16550 : public sc_core::sc_module {
 	}
 
 	uint8_t take_next_char() {
+	fprintf(stderr, "in take_next_char\n");
 		try_receive_char();
 		if (rx_fifo.empty())
 			return -1;

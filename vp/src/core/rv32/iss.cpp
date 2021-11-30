@@ -121,8 +121,8 @@ void ISS::benchmark_tick(int pc_increment){
 	{
 		if (key + pc_increment == (int)this->pc)
 		{
-			std::cout << "------[Syscall Benchmark]--------" << std::endl;
-			std::cout << "[PC]: " << key << "\n" << 
+			std::cerr << "------[Syscall Benchmark]--------" << std::endl;
+			std::cerr << "[PC]: " << key << "\n" << 
 			"[Number of instructions until return]: " << val.num_of_instructions << "\n" << 
 			"[Syscall]: " << val.sys_call << "\n" <<
 						 "---------------------------------" << std::endl << std::endl;
@@ -139,7 +139,7 @@ void ISS::benchmark_tick(int pc_increment){
 }
 void ISS::benchmark_start(int pc, int syscall){
 	this->benchmark_map[pc] = benchmark{0, syscall};
-	this->trace = true;
+	//this->trace = true;
 }
 
 void ISS::exec_step() {
@@ -169,34 +169,35 @@ void ISS::exec_step() {
 	}
 
 	if (trace) {
-		printf("core %2u: prv %1x: pc %8x: %s ", csrs.mhartid.reg, prv, last_pc, Opcode::mappingStr[op]);
+		fprintf(stderr, "core %2u: prv %1x: pc %8x: %s ", csrs.mhartid.reg, prv, last_pc, Opcode::mappingStr[op]);
 		switch (Opcode::getType(op)) {
 			case Opcode::Type::R:
-				printf(COLORFRMT ", " COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
+				fprintf(stderr, COLORFRMT ", " COLORFRMT ", " COLORFRMT, COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
 				       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
 				       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]));
 				break;
 			case Opcode::Type::I:
-				printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
+				fprintf(stderr, COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]),
 				       COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]), instr.I_imm());
 				break;
 			case Opcode::Type::S:
-				printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
+				fprintf(stderr, COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
 				       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]), instr.S_imm());
 				break;
 			case Opcode::Type::B:
-				printf(COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
+				fprintf(stderr, COLORFRMT ", " COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rs1()], regnames[instr.rs1()]),
 				       COLORPRINT(regcolors[instr.rs2()], regnames[instr.rs2()]), instr.B_imm());
 				break;
 			case Opcode::Type::U:
-				printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.U_imm());
+				fprintf(stderr, COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.U_imm());
 				break;
 			case Opcode::Type::J:
-				printf(COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.J_imm());
+				fprintf(stderr, COLORFRMT ", 0x%x", COLORPRINT(regcolors[instr.rd()], regnames[instr.rd()]), instr.J_imm());
 				break;
 			default:;
 		}
-		puts("");
+		fprintf(stderr, "\n");
+		//puts("");
 	}
 
 	switch (op) {

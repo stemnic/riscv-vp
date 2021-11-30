@@ -132,10 +132,11 @@ void AbstractUART::register_access_callback(const vp::map::register_access_t &r)
 
 			rcvmtx.unlock();
 		} else if (r.vptr == &txctrl) {
-			// std::cout << "TXctl";
+			std::cout << "TXctl";
 		} else if (r.vptr == &rxctrl) {
-			// std::cout << "RXctrl";
+			std::cout << "RXctrl";
 		} else if (r.vptr == &ip) {
+			std::cout << "RXip";
 			uint32_t ret = 0;
 			txmtx.lock();
 			if (tx_fifo.size() < UART_CTRL_CNT(txctrl)) {
@@ -247,8 +248,9 @@ void AbstractUART::interrupt(void) {
 		txmtx.unlock();
 	}
 
-	if (trigger)
+	if (trigger) {
 		plic->gateway_trigger_interrupt(irq);
+	}
 }
 
 void AbstractUART::swait(sem_t *sem) {

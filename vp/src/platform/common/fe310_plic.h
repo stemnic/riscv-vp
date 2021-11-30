@@ -186,8 +186,10 @@ struct FE310_PLIC : public sc_core::sc_module, public interrupt_gateway {
 		while (true) {
 			sc_core::wait(e_run);
 
+			// std::cout << "[vp::plic] trigger interrupt" << std::endl;
 			for (unsigned i = 0; i < NumberCores; ++i) {
-				if (!hart_eip[i]) {
+				// std::cout << "[vp::plic] core " << i << hart_eip[i] << std::endl;
+				if (1 || !hart_eip[i]) {
 					if (hart_has_pending_enabled_interrupts(i)) {
 						// std::cout << "[vp::plic] trigger interrupt" << std::endl;
 						hart_eip[i] = true;
